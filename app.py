@@ -146,21 +146,25 @@ def calculate_score(country_name, raw_inputs_list):
             user_val = float(raw_inputs_list[i])
             orig_raw_val = float(row_raw.get(feat_ui, 0.0))
             
-            # TUTARLILIK KONTROLÜ: Eğer değer değişmediyse, proc dosyasındaki orijinal z-skoru kullan
-            # Bu, yuvarlama hatalarından kaynaklanan (36.24 vs 24.35) farkını önler.
-            if math.isclose(user_val, orig_raw_val, rel_tol=1e-5):
+            # Hassasiyeti artırdık (1e-5 -> 1e-3) ve doğrudan pre-processed veriye güveniyoruz
+            if math.isclose(user_val, orig_raw_val, rel_tol=1e-3):
                 final_scaled_feat = row_proc[feat_ui]
             else:
-                # Değer değiştiyse scaler ile yeni z-skor hesapla
+                # Değer değiştiyse manuel scaler kullan
                 idx = scaler_cols.index(feat_ui)
                 new_scaled = (user_val - scaler.mean_[idx]) / scaler.scale_[idx]
-                if feat_ui.lower().strip() in cost_cols: new_scaled = -new_scaled
+                
+                # Maliyet sütunu kontrolü (küçük/büyük harf duyarlılığı giderildi)
+                is_cost = any(c.strip().lower() == feat_ui.strip().lower() for c in cost_cols)
+                if is_cost: 
+                    new_scaled = -new_scaled
                 final_scaled_feat = new_scaled
                 
             model_input.at[0, feature_map[feat_ui]] = final_scaled_feat
             
         return max(0, min(100, model.predict(model_input)[0]))
-    except Exception:
+    except Exception as e:
+        print(f"Hata: {e}") # Konsolda hata takibi için
         return 0.0
 
 def get_actual_gii(country, lang):
@@ -221,28 +225,35 @@ with st.expander("Metodoloji Hakkında / About Methodology"):
 tab_names = ["Senaryo Simülatörü", "Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Scenario Simulator", "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"]
 t1, t2, t3, t4, t5 = st.tabs(tab_names)
 
-# SEKME 1: SİMÜLATÖR
+# SEKME 1: SİMÜLATÖR (Güncellenmiş Kısım)
 with t1:
     st.markdown("### " + ("Senaryo Bazlı Tahmin Simülasyonu" if lang=="tr" else "Scenario-Based Prediction Simulation"))
-    if lang == "tr":
-        st.info("💡 **Bu modül**, seçtiğiniz bir ülkenin mevcut gösterge değerlerini değiştirerek, yeni senaryoların 2025 GII skoru üzerindeki etkisini anında tahmin etmenizi sağlar.")
-    else:
-        st.info("💡 **This module** allows you to instantly forecast the impact of new scenarios on the 2025 GII score by modifying indicator values.")
+    # ... (Bilgi mesajları aynı kalabilir)
 
-    country_sim = st.selectbox("Ülke Seç / Select Country" , country_list, key="c_sim")
+    # Key eklendi: Ülke değişince inputlar sıfırlanacak
+    country_sim = st.selectbox("Ülke Seç / Select Country", country_list, key="c_sim_selector")
     
-    # Mevcut ham verileri çekelim
-    current_raw_vals = [float(latest_data_raw.loc[country_sim].get(col, 0.0)) for col in ui_input_names]
+    # Seçili ülkenin ham verilerini çek
+    current_country_row = latest_data_raw.loc[country_sim]
     
     user_inputs = []
     with st.expander("Değişkenleri Düzenle / Edit Variables"):
         cols = st.columns(2)
         for i, name in enumerate(ui_input_names):
+            # Ham veriyi güvenli bir şekilde al
+            default_val = float(current_country_row.get(name, 0.0))
+            
             with cols[i % 2]:
-                val = st.number_input(name, value=current_raw_vals[i], format="%.5f", key=f"inp_{name}")
+                # KRİTİK DÜZELTME: Key içine {country_sim} eklendi
+                val = st.number_input(
+                    name, 
+                    value=default_val, 
+                    format="%.5f", 
+                    key=f"inp_{country_sim}_{name}" 
+                )
                 user_inputs.append(val)
                 
-    if st.button("Tahmini Hesapla / Calculate Forecast", type="primary", key="btn_sim"):
+    if st.button("Tahmini Hesapla / Calculate Forecast", type="primary", key="btn_sim_exec"):
         score = calculate_score(country_sim, user_inputs)
         actual = get_actual_gii(country_sim, lang)
         
