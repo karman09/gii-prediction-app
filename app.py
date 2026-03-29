@@ -164,57 +164,29 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
 # --- SEKMELER ---
 t1, t2, t3, t4, t5 = st.tabs(["Senaryo Simülatörü", "Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Scenario Simulator", "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
 
-# SEKME 1: SİMÜLATÖR
-
+# SEKME 1: SENARYO SİMÜLATÖRÜ (SHAP ile Aynı Hesaplama Motorunu Kullanır)
 with t1:
-
     st.markdown("### " + ("Senaryo Bazlı Tahmin Simülasyonu" if lang=="tr" else "Scenario-Based Prediction Simulation"))
-
-    
-
-    if lang == "tr":
-
-        st.info("💡 **Bu modül**, seçtiğiniz bir ülkenin mevcut gösterge değerlerini değiştirerek, yeni senaryoların 2025 GII skoru üzerindeki etkisini anında tahmin etmenizi sağlar.")
-
-    else:
-
-        st.info("💡 **This module** allows you to instantly forecast the impact of new scenarios on the 2025 GII score by modifying the current indicator values of a selected country.")
-
-
+    st.info("💡 " + ("Seçtiğiniz ülkenin mevcut değerlerini değiştirerek 2025 GII skorunu anında tahmin edin." if lang=="tr" else "Instantly forecast the 2025 GII score by modifying current indicator values."))
 
     country_sim = st.selectbox("Ülke Seç / Select Country" , country_list, key="c_sim")
-
     raw_vals = get_raw_values(country_sim)
-
     user_inputs = []
-
     
-
     with st.expander("Değişkenleri Düzenle / Edit Variables" if lang=="tr" else "View / Edit Variables"):
-
         cols = st.columns(2)
-
         for i, name in enumerate(ui_input_names):
-
             with cols[i % 2]:
-
                 val = st.number_input(name, value=float(raw_vals[i]), format="%.5f", key=f"inp_{name}")
-
                 user_inputs.append(val)
-
                 
     if st.button("Tahmini Hesapla / Calculate Forecast", type="primary"):
-
-        score = calculate_score(country_sim, user_inputs)
-
+        score, _ = calculate_score_engine(country_sim, user_inputs)
         actual = get_actual_gii(country_sim, lang)
-
+        
         if lang == "tr":
-
             st.success(f"**{country_sim} İçin {TARGET_YEAR} GII Tahmini:** {score:.2f}\n\n**{TARGET_YEAR} GII Gerçekleşen Değeri:** {actual}")
-
         else:
-
             st.success(f"**{TARGET_YEAR} GII Forecast for {country_sim}:** {score:.2f}\n\n**{TARGET_YEAR} GII Actual Value:** {actual}")
 
 # SEKME 4: HEDEF VE SHAP (Kod 2'deki Eksik Öngörüler Geri Geldi)
@@ -289,7 +261,6 @@ with t5:
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
-
 
 
 
