@@ -72,7 +72,7 @@ trend_features_tr = ["GII Skoru (Gerçekleşen)"] + trend_candidates
 trend_features_en = ["GII Score (Actual)"] + trend_candidates
 
 # ============================================================
-# 3. CORE HESAPLAMA MANTIĞI
+# 3. CORE HESAPLAMA MANTIĞI (SIMULATOR VE SHAP TUTARLILIĞI)
 # ============================================================
 def get_raw_values(country_name):
     if country_name not in latest_data_raw.index: return [0.0] * len(ui_input_names)
@@ -80,6 +80,7 @@ def get_raw_values(country_name):
     return [float(row.get(col, 0.0) if not pd.isna(row.get(col, 0.0)) else 0.0) for col in ui_input_names]
 
 def calculate_score_engine(country_name, raw_inputs_list):
+    """Hem simülatör hem SHAP için ortak, güvenilir hesaplama motoru"""
     try:
         row_raw = latest_data_raw.loc[country_name]
         row_proc = latest_data_proc.loc[country_name]
@@ -142,40 +143,109 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         st.markdown("""
         **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
         
-        **2. Geliştirilen Yapay Zeka Modeli:** Bu sistem, 78 değişkenin tamamını manuel hesaplamak yerine, **tahminsel (predictive)** bir yaklaşım sunar.
+        **2. Geliştirilen Yapay Zeka Modeli:** Bu sistem, 78 değişkenin tamamını manuel hesaplamak yerine, **tahminsel (predictive)** bir yaklaşım sunar:
+        * **Kritik Değişken Seçimi:** Model, 78 gösterge arasından GII skorunu en çok etkileyen **"22 Kritik Belirleyici"** tespit etmiştir.
+        * **Doğrusal Olmayan Öğrenme:** Model seçilen **22 değişken** arasındaki karmaşık ilişkileri öğrenerek sonuç üretir.
+        * **SHAP (XAI):** Tahminlerin nedenini açıklayan "Açıklanabilir Yapay Zeka" teknolojisi entegre edilmiştir.
         """)
     else:
         st.markdown("""
         **1. Classical GII Calculation (WIPO Methodology):** The GII is calculated by taking the weighted average of exactly **78 indicators** grouped under **7 main pillars**.
         
-        **2. Developed AI Model:** Instead of manual calculation, this system offers a **predictive** approach.
+        **2. Developed AI Model:** Instead of manual calculation, this system offers a **predictive** approach:
+        * **Critical Variable Selection:** The model identified **"22 Critical Determinants"** that most impact the score.
+        * **Non-linear Learning:** The model produces results by learning complex relationships between the selected **22 variables**.
+        * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
 
-# --- SEKMELER (Sekme 1 Çıkarıldı) ---
-t1, t2, t3, t4 = st.tabs(["Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
+# --- SEKMELER (SENARYO SİMÜLATÖRÜ ÇIKARILDI) ---
+t2, t3, t4, t5 = st.tabs(["Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
 
-# SEKME 1: DUYARLILIK ANALİZİ
-with t1:
-    st.markdown("### " + ("Duyarlılık Analizi" if lang=="tr" else "Sensitivity Analysis"))
+# SEKME 2: DUYARLILIK ANALİZİ
+with t2:
+    st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
+    
+    if lang == "tr":
+        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk varsayımsal bir iyileşmenin veya kötüleşmenin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
+    else:
+        st.info("💡 **This module** automatically identifies priority intervention areas for policymakers by measuring the impact of a hypothetical 10% improvement or deterioration in current variables on the overall score.")
+
     adv_country = st.selectbox("Ülke Seç / Select Country", country_list, key="adv_country")
-    if st.button("Analizi Başlat / Start Analysis", key="adv_btn"):
+    
+    if st.button("Analizi Başlat / Start Analysis", type="primary", key="adv_btn"):
         adv_inputs = get_raw_values(adv_country)
         current_score, _ = calculate_score_engine(adv_country, adv_inputs)
-        st.write(f"**Baz Tahmin:** {current_score:.2f}")
-        # Not: Detaylı duyarlılık döngüsü buraya eklenebilir.
+        impacts = []
+        for i, orig_name in enumerate(ui_input_names):
+            val = adv_inputs[i]
+            is_cost = orig_name.lower().strip() in cost_cols
+            new_val = val * 0.90 if is_cost else val * 1.10
+            act = "AZALTILIRSA" if lang == "tr" else "DECREASED" if is_cost else "ARTIRILIRSA" if lang == "tr" else "INCREASED"
+            temp = adv_inputs.copy()
+            temp[i] = new_val
+            new_score, _ = calculate_score_engine(adv_country, temp)
+            gain = new_score - current_score
+            if not np.isnan(gain) and gain > 0.01:
+                impacts.append({"Feat": orig_name, "Gain": gain, "Act": act, "Val": new_val})
+                
+        impacts.sort(key=lambda x: x["Gain"], reverse=True)
+        
+        if lang == "tr":
+            report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
+            if not impacts: report += "Değişkenlerde %10'luk değişim belirgin fark yaratmadı."
+            else:
+                report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
+                for item in impacts[:5]: report += f"- **[{item['Feat']}]** -> %10 {item['Act']}\n  - Yeni Değer: {item['Val']:.2f} | Beklenen Artış: **+{item['Gain']:.3f} puan**\n"
+        else:
+            report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {current_score:.2f}\n\n---\n\n"
+            if not impacts: report += "A 10% change in variables did not make a significant difference."
+            else:
+                report += f"**PRIORITY AREAS FOR {TARGET_YEAR} SCORE:**\n\n"
+                for item in impacts[:5]: report += f"- **[{item['Feat']}]** -> 10% {item['Act']}\n  - New Value: {item['Val']:.2f} | Expected Gain: **+{item['Gain']:.3f} points**\n"
+        st.markdown(report)
 
-# SEKME 2: KARŞILAŞTIRMALI ANALİZ
-with t2:
-    st.markdown("### " + ("Karşılaştırmalı Analiz" if lang=="tr" else "Comparative Analysis"))
-    c1_col, c2_col = st.columns(2)
-    with c1_col: country_a = st.selectbox("Ülke A", country_list, key="c_a")
-    with c2_col: country_b = st.selectbox("Ülke B", country_list, key="c_b", index=1)
-    st.info("Bu bölümde ülkeler arası Z-skor kıyaslaması yapılabilir.")
-
-# SEKME 3: HEDEF VE SHAP
+# SEKME 3: KARŞILAŞTIRMALI ANALİZ
 with t3:
+    st.markdown("### " + ("Standardize Edilmiş Performans Matrisi (Z-Skor)" if lang=="tr" else "Standardized Performance Matrix (Z-Score)"))
+    
+    if lang == "tr":
+        st.info("💡 **Bu modül**, iki farklı ülkenin kritik göstergelerdeki performansını standartlaştırılmış Z-skorları üzerinden görselleştirerek doğrudan kıyaslamanızı sağlar.")
+    else:
+        st.info("💡 **This module** allows you to benchmark the performance of two different countries across critical indicators by visualizing their standardized Z-scores.")
+
+    c1_col, c2_col = st.columns(2)
+    with c1_col: c1 = st.selectbox("Ülke A / Country A", country_list, key="bench_c1")
+    with c2_col: c2 = st.selectbox("Ülke B / Country B", country_list, key="bench_c2", index=1)
+    
+    if st.button("Grafiği Oluştur / Generate Chart", type="primary", key="bench_btn"):
+        v1, v2 = get_raw_values(c1), get_raw_values(c2)
+        s1, _ = calculate_score_engine(c1, v1)
+        s2, _ = calculate_score_engine(c2, v2)
+        row_proc_1, row_proc_2 = latest_data_proc.loc[c1], latest_data_proc.loc[c2]
+        
+        z1, z2, lbls = [], [], []
+        for f in ui_input_names:
+            lbls.append(f + " (-)" if f.lower().strip() in cost_cols else f)
+            z1.append(row_proc_1[f])
+            z2.append(row_proc_2[f])
+            
+        fig_height = max(6, len(lbls) * 0.4)
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        y = np.arange(len(lbls))
+        ax.barh(y - 0.175, z1, 0.35, label=f"{c1}", color="#0f766e", alpha=0.9)
+        ax.barh(y + 0.175, z2, 0.35, label=f"{c2}", color="#64748b", alpha=0.9)
+        ax.set_yticks(y); ax.set_yticklabels(lbls, fontsize=10)
+        ax.legend()
+        ax.axvline(0, color='black', linewidth=1, linestyle='--')
+        plt.tight_layout()
+        st.pyplot(fig)
+
+# SEKME 4: HEDEF VE SHAP
+with t4:
     st.markdown("### " + ("Model Açıklanabilirliği (XAI) ve Stratejik Hedef Takibi" if lang=="tr" else "Model Explainability (XAI) and Strategic Target Tracking"))
     
+    st.info("💡 " + ("Bu modül, hedef skor ile tahmin arasındaki farkı hesaplar ve SHAP grafikleriyle en güçlü yönleri ve gelişim alanlarını listeler." if lang=="tr" else "This module calculates the gap between target and forecast, listing strengths and improvement areas via SHAP."))
+
     shap_c, target_c = st.columns([2,1])
     with shap_c: d4 = st.selectbox("Ülke Seç / Select Country", country_list, key="shap_c")
     with target_c: target_score = st.number_input("Hedeflenen GII Skoru" if lang=="tr" else "Targeted Score", value=0.0)
@@ -216,13 +286,31 @@ with t3:
             fig = plt.figure(figsize=(9, 6))
             shap.plots.waterfall(shap_values[0], max_display=10, show=False)
             plt.tight_layout()
-            st.pyplot(fig)
+            st.pyplot(plt.gcf())
 
-# SEKME 4: TRENDLER
-with t4:
-    st.markdown("### " + ("Trend Analizi" if lang=="tr" else "Trend Analysis"))
-    d5_c = st.selectbox("Ülke Seç / Select Country", country_list, key="trend_c")
-    st.info("Bu bölümde tarihsel değişim grafikleri görüntülenebilir.")
+# SEKME 5: TREND ANALİZİ
+with t5:
+    st.markdown("### " + ("5 Yıllık Trend Analizi" if lang=="tr" else "5-Year Trend Analysis"))
+    d5_c, f5_c = st.columns(2)
+    with d5_c: d5 = st.selectbox("Ülke Seç / Select Country", country_list, key="trend_c")
+    with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken / Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
+    
+    if st.button("Trendi Çiz / Plot Trend", type="primary", key="trend_btn"):
+        country_data = df_raw[df_raw[country_col] == d5].copy().sort_values(by=year_col)
+        actual_col = None
+        if feat_dropdown in ["GII Skoru (Gerçekleşen)", "GII Score (Actual)"]:
+            gii_cols = [c for c in df_raw.columns if "global innovation index" in c.lower()]
+            if gii_cols: actual_col = gii_cols[0]
+        else: actual_col = feat_dropdown 
+        
+        if actual_col and actual_col in country_data.columns:
+            x, y = country_data[year_col].astype(int).tolist(), country_data[actual_col].tolist()
+            fig, ax = plt.subplots(figsize=(9, 5))
+            ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
+            ax.set_title(f"{d5} - {feat_dropdown}")
+            st.pyplot(fig)
+        else:
+            st.error("Veri bulunamadı.")
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
