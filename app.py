@@ -132,11 +132,14 @@ with col2:
     except:
         pass 
 
-# ---> YENİ BAŞLIK (Pastel Mavi ve Belirgin) <---
-st.markdown("<h2 style='text-align: center; color: #6fa8dc; font-weight: bold;'>GII 2025 Tahmin ve Karar Destek Sistemi <br> <span style='font-size: 0.8em;'>Forecast & Decision Support System</span></h2>", unsafe_allow_html=True)
+# ---> DİNAMİK YENİ BAŞLIK (Dile Göre Değişen, Pastel Mavi ve Belirgin) <---
+if lang == "tr":
+    st.markdown("<h2 style='text-align: center; color: #6fa8dc; font-weight: bold;'>GII 2025 Tahmin ve Karar Destek Sistemi</h2>", unsafe_allow_html=True)
+else:
+    st.markdown("<h2 style='text-align: center; color: #6fa8dc; font-weight: bold;'>GII 2025 Forecast & Decision Support System</h2>", unsafe_allow_html=True)
 
-# ---> REVİZE EDİLEN METODOLOJİ BÖLÜMÜ (22 Değişken Detayı Eklendi) <---
-with st.expander("Metodoloji Hakkında / About Methodology"):
+# ---> REVİZE EDİLEN METODOLOJİ BÖLÜMÜ <---
+with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "About Methodology"):
     if lang == "tr":
         st.markdown("""
         **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır. Bu, tüm verilerin eksiksiz girilmesini gerektiren deterministik (kural tabanlı) bir süreçtir.
@@ -391,5 +394,7 @@ with t5:
 
 # --- FOOTER ---
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: gray;'>2025 Stratejik Tahmin ve Karar Destek Sistemi</p>", unsafe_allow_html=True)
- 
+if lang == "tr":
+    st.markdown("<p style='text-align: center; color: gray;'>2025 Stratejik Tahmin ve Karar Destek Sistemi</p>", unsafe_allow_html=True)
+else:
+    st.markdown("<p style='text-align: center; color: gray;'>2025 Strategic Forecast and Decision Support System</p>", unsafe_allow_html=True)
