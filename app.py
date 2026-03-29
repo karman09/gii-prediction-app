@@ -157,10 +157,13 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         * **Non-linear Learning:** The model produces results by learning complex relationships between the selected **22 variables**.
         * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
-
-# --- SEKMELER (SİMÜLATÖR ÇIKARILDI) ---
-t1, t2, t3, t4 = st.tabs(["Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
-
+        
+# --- SEKMELER (SİMÜLATÖR EKLENDİ) ---
+t1, t2, t3, t4, t5 = st.tabs([
+    "Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Senaryo Simülatörü"
+] if lang=="tr" else [
+    "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Scenario Simulator"
+])
 # SEKME 1: DUYARLILIK ANALİZİ
 with t1:
     st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
@@ -311,6 +314,94 @@ with t4:
             st.pyplot(fig)
         else:
             st.error("Veri bulunamadı.")
+    # ============================================================
+# SEKME 5: SENARYO SİMÜLATÖRÜ (WHAT-IF ANALYSIS)
+# ============================================================
+with t5:
+    st.markdown("### " + ("GII 2025 Senaryo Simülatörü" if lang=="tr" else "GII 2025 Scenario Simulator"))
+    
+    st.info("💡 " + (
+        "Bu bölümde, seçilen ülkenin 2023 ham verilerini (baz değerler) görebilir ve bu değerleri değiştirerek "
+        "2025 tahmin skorunun nasıl etkilendiğini anlık olarak simüle edebilirsiniz."
+        if lang=="tr" else 
+        "In this section, you can view the 2023 raw data (baseline) for the selected country and simulate "
+        "how the 2025 forecast score is affected by changing these values in real-time."
+    ))
+
+    # Ülke Seçimi
+    sim_country = st.selectbox("Simülasyon İçin Ülke Seç / Select Country", country_list, key="sim_country_box")
+    
+    # Seçilen ülkenin 2023 ham verilerini çek
+    base_raw_values = get_raw_values(sim_country)
+    
+    # Başlangıç (Orijinal) 2025 Tahmini
+    base_pred, _ = calculate_score_engine(sim_country, base_raw_values)
+    
+    st.divider()
+    
+    # Sol kolon: Değişken girişleri | Sağ kolon: Sonuç metrikleri
+    col_input, col_res = st.columns([2, 1])
+    
+    new_sim_values = []
+    
+    with col_input:
+        st.subheader("📝 " + ("Değişken Ham Değerleri" if lang=="tr" else "Raw Variable Values"))
+        # Değişkenleri 2 alt kolona bölerek daha derli toplu gösterelim
+        sub_c1, sub_c2 = st.columns(2)
+        
+        for i, feat_name in enumerate(ui_input_names):
+            current_val = float(base_raw_values[i])
+            target_sub_col = sub_c1 if i % 2 == 0 else sub_c2
+            
+            # Kullanıcıya ham değerleri değiştirme imkanı tanıyan input
+            u_val = target_sub_col.number_input(
+                label=f"{feat_name}",
+                value=current_val,
+                format="%.3f",
+                key=f"input_{sim_country}_{i}" # Ülke değiştikçe key değişmeli
+            )
+            new_sim_values.append(u_val)
+
+    with col_res:
+        st.subheader("🎯 " + ("Simülasyon Çıktısı" if lang=="tr" else "Simulation Output"))
+        
+        # Yeni değerlerle anlık hesaplama
+        sim_pred, _ = calculate_score_engine(sim_country, new_sim_values)
+        diff = sim_pred - base_pred
+        
+        # Skor Kartı
+        st.metric(
+            label=f"{TARGET_YEAR} " + ("Simüle Edilen Skor" if lang=="tr" else "Simulated Score"),
+            value=f"{sim_pred:.2f}",
+            delta=f"{diff:.2f} " + ("Puan Değişimi" if lang=="tr" else "Point Change")
+        )
+        
+        st.write("---")
+        st.write(f"**{sim_country} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
+        st.success(f"**{base_pred:.2f}**")
+        
+        # Özet Analiz
+        if abs(diff) > 0.01:
+            direction = "artış" if diff > 0 else "düşüş"
+            if lang == "en": direction = "increase" if diff > 0 else "decrease"
+            st.warning(f"⚠️ " + (
+                f"Yapılan değişiklikler skorda {abs(diff):.2f} puanlık bir {direction} yaratıyor."
+                if lang=="tr" else
+                f"The changes made result in a {abs(diff):.2f} point {direction} in the score."
+            ))
+        
+        if st.button("Değerleri Sıfırla / Reset Values" if lang=="tr" else "Reset Values"):
+            st.rerun()
+
+    # Alt kısma küçük bir karşılaştırma tablosu
+    with st.expander("Değişim Detaylarını Gör / See Change Details"):
+        comparison_df = pd.DataFrame({
+            "Değişken / Variable": ui_input_names,
+            "2023 Baz (Raw)": base_raw_values,
+            "Simülasyon (Raw)": new_sim_values
+        })
+        comparison_df["Fark / Diff"] = comparison_df["Simülasyon (Raw)"] - comparison_df["2023 Baz (Raw)"]
+        st.table(comparison_df[comparison_df["Fark / Diff"] != 0])
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
