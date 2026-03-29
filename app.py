@@ -1,6 +1,6 @@
 # ============================================================
 # D-LOGII STREAMLIT DASHBOARD (REVIZED - DEPLOY READY)
-# Mantık ve hesaplama birebir korunmuştur
+# 
 # ============================================================
 
 import streamlit as st
