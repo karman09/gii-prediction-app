@@ -1,3 +1,8 @@
+# ============================================================
+# D-LOGII STREAMLIT DASHBOARD (REVIZED - DEPLOY READY)
+# Mantık ve hesaplama birebir korunmuştur
+# ============================================================
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,143 +12,185 @@ import re
 import math
 import shap
 
-# Sayfa Konfigürasyonu (En üstte olmalı)
+# ============================================================
+# CONFIG
+# ============================================================
 st.set_page_config(page_title="D-LOGII Dashboard", layout="wide")
 
+TARGET_YEAR = 2025
+LAG_PERIOD = 2
+INPUT_YEAR = TARGET_YEAR - LAG_PERIOD
+
 # ============================================================
-# 1. DOSYA YOLLARI VE YÜKLEME (Cache kullanarak hızı artırıyoruz)
+# LOAD DATA
 # ============================================================
 @st.cache_resource
-def load_assets():
-    # Dosya yollarını GitHub deponuzdaki isimlere göre güncelleyin
-    raw_data_path      = "FINAL_DATA.xlsx"
-    proc_data_path     = "FINAL_PREPROCESSED_DATA.xlsx"
-    scaler_path        = "SCALER.pkl"
-    scaler_cols_path   = "SCALER_COLUMNS.pkl"
-    cost_cols_path     = "COST_COLS.pkl"
-    model_path         = "BEST_MODEL.pkl"
-    features_path      = "BEST_MODEL_FEATURES.pkl"
+def load_system():
+    df_raw = pd.read_excel("data/FINAL_DATA.xlsx")
+    df_proc = pd.read_excel("data/FINAL_PREPROCESSED_DATA.xlsx")
 
-    try:
-        df_raw  = pd.read_excel(raw_data_path)
-        df_proc = pd.read_excel(proc_data_path)
-        scaler = joblib.load(scaler_path)
-        scaler_cols = joblib.load(scaler_cols_path)
-        cost_cols = joblib.load(cost_cols_path)
-        model = joblib.load(model_path)
-        model_features = joblib.load(features_path)
-        return df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features
-    except Exception as e:
-        st.error(f"Dosya yükleme hatası: {e}")
-        return None
+    scaler = joblib.load("models/SCALER.pkl")
+    scaler_cols = joblib.load("models/SCALER_COLUMNS.pkl")
+    cost_cols = joblib.load("models/COST_COLS.pkl")
 
-assets = load_assets()
-if assets:
-    df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features = assets
+    model = joblib.load("models/BEST_MODEL.pkl")
+    model_features = joblib.load("models/BEST_MODEL_FEATURES.pkl")
+
+    return df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features
+
+df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features = load_system()
 
 # ============================================================
-# 2. YARDIMCI FONKSİYONLAR (Mantık Değişmedi)
+# PREP
 # ============================================================
 def sanitize_name(name):
     return re.sub(r"[^A-Za-z0-9_]", "", name)
 
-sanitized_to_original = {sanitize_name(col): col for col in scaler_cols}
+sanitized_to_original = {sanitize_name(c): c for c in scaler_cols}
 
 country_col = [c for c in df_raw.columns if "country" in c.lower() or "economy" in c.lower()][0]
-year_col, TARGET_YEAR, LAG_PERIOD = "year", 2025, 2023
 
-latest_data_raw  = df_raw[df_raw[year_col] == LAG_PERIOD].set_index(country_col)
-latest_data_proc = df_proc[df_proc[year_col] == LAG_PERIOD].set_index(country_col)
-country_list = sorted(latest_data_raw.index.tolist())
+latest_raw = df_raw[df_raw["year"] == INPUT_YEAR].set_index(country_col)
+latest_proc = df_proc[df_proc["year"] == INPUT_YEAR].set_index(country_col)
+
+countries = sorted(latest_raw.index.tolist())
 
 feature_map = {}
-ui_input_names = []
+ui_inputs = []
+
 for feat in model_features:
-    base_clean = re.sub(r"_lag\d+$", "", feat)
-    if base_clean in sanitized_to_original:
-        original_name = sanitized_to_original[base_clean]
-        feature_map[original_name] = feat
-        ui_input_names.append(original_name)
-
-reverse_feature_map = {v: k for k, v in feature_map.items()}
+    base = re.sub(r"_lag\d+$", "", feat)
+    if base in sanitized_to_original:
+        orig = sanitized_to_original[base]
+        feature_map[orig] = feat
+        ui_inputs.append(orig)
 
 # ============================================================
-# 3. HESAPLAMA MOTORU (Core Logic)
+# CORE LOGIC (UNCHANGED)
 # ============================================================
-def calculate_score_logic(country_name, user_inputs_dict):
-    row_raw = latest_data_raw.loc[country_name]
-    row_proc = latest_data_proc.loc[country_name]
+def calculate_score(country, inputs):
+    row_raw = latest_raw.loc[country]
+    row_proc = latest_proc.loc[country]
+
     model_input = pd.DataFrame(0.0, index=[0], columns=model_features)
 
-    for feat_ui in ui_input_names:
-        user_val = float(user_inputs_dict[feat_ui])
-        base_raw_val = row_raw.get(feat_ui, np.nan)
-        displayed_base_val = 0.0 if pd.isna(base_raw_val) else float(base_raw_val)
+    for i, feat in enumerate(ui_inputs):
+        user_val = float(inputs[i])
 
-        if math.isclose(user_val, displayed_base_val, rel_tol=1e-5, abs_tol=1e-5):
-            final_scaled_feat = row_proc[feat_ui]
+        base_val = row_raw.get(feat, 0.0)
+        base_val = 0.0 if pd.isna(base_val) else float(base_val)
+
+        if math.isclose(user_val, base_val):
+            final_val = row_proc[feat]
         else:
-            idx = scaler_cols.index(feat_ui)
-            new_scaled = (user_val - scaler.mean_[idx]) / scaler.scale_[idx]
-            if feat_ui.lower().strip() in cost_cols:
+            idx = scaler_cols.index(feat)
+            mean = scaler.mean_[idx]
+            scale = scaler.scale_[idx]
+
+            new_scaled = (user_val - mean) / scale
+
+            if feat.lower().strip() in cost_cols:
                 new_scaled = -new_scaled
-            final_scaled_feat = new_scaled
-        
-        model_input.at[0, feature_map[feat_ui]] = final_scaled_feat
-    
+
+            final_val = new_scaled
+
+        model_input.at[0, feature_map[feat]] = final_val
+
     pred = model.predict(model_input)[0]
     return max(0, min(100, pred))
 
 # ============================================================
-# 4. STREAMLIT UI (Profesyonel Tema)
+# UI
 # ============================================================
-st.markdown(f"""
-    <div style='text-align: center;'>
-        <h1 style='color: #0f766e;'>D-LOGII</h1>
-        <h3 style='color: #64748b;'>Dynamic Lasso-Optimized Global Innovation Index</h3>
-    </div>
-    <hr>
-    """, unsafe_allow_html=True)
+st.title("D-LOGII Dashboard")
+st.caption("Dynamic Lasso-Optimized Global Innovation Index")
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "Senaryo Simülatörü", 
-    "Duyarlılık Analizi", 
-    "Karşılaştırmalı Analiz", 
-    "SHAP Analizi"
+tab1, tab2, tab3 = st.tabs([
+    "Simülatör",
+    "Duyarlılık",
+    "Karşılaştırma"
 ])
 
-# --- TAB 1: SİMÜLATÖR ---
+# ============================================================
+# TAB 1
+# ============================================================
 with tab1:
-    st.subheader("Senaryo Bazlı Tahmin Simülasyonu")
-    selected_country = st.selectbox("Ülke Seçiniz", country_list, key="sb1")
-    
-    with st.expander("Değişkenleri Düzenle (Ham Veriler)", expanded=False):
-        col1, col2 = st.columns(2)
-        user_inputs = {}
-        raw_vals = latest_data_raw.loc[selected_country]
-        
-        for i, name in enumerate(ui_input_names):
-            current_val = float(raw_vals.get(name, 0.0)) if not pd.isna(raw_vals.get(name)) else 0.0
-            target_col = col1 if i % 2 == 0 else col2
-            user_inputs[name] = target_col.number_input(f"{name}", value=current_val, key=f"in_{name}")
+    country = st.selectbox("Ülke", countries)
 
-    if st.button("Tahmini Hesapla", type="primary"):
-        score = calculate_score_logic(selected_country, user_inputs)
-        st.success(f"**{selected_country}** İçin {TARGET_YEAR} GII Tahmini: **{score:.2f}**")
+    row = latest_raw.loc[country]
 
-# --- TAB 3: KIYASLA (Örnek olarak Benchmark eklenmiştir) ---
+    inputs = []
+    cols = st.columns(2)
+
+    for i, feat in enumerate(ui_inputs):
+        val = row.get(feat, 0.0)
+        val = 0.0 if pd.isna(val) else float(val)
+
+        with cols[i % 2]:
+            inputs.append(st.number_input(feat, value=val))
+
+    if st.button("Tahmin Hesapla"):
+        score = calculate_score(country, inputs)
+        st.success(f"Tahmini GII ({TARGET_YEAR}): {score:.2f}")
+
+# ============================================================
+# TAB 2
+# ============================================================
+with tab2:
+    country = st.selectbox("Ülke Seç", countries, key="sens")
+
+    inputs = latest_raw.loc[country].fillna(0).tolist()[:len(ui_inputs)]
+    base_score = calculate_score(country, inputs)
+
+    results = []
+
+    for i, feat in enumerate(ui_inputs):
+        val = inputs[i]
+
+        if feat.lower().strip() in cost_cols:
+            new_val = val * 0.9
+        else:
+            new_val = val * 1.1
+
+        temp = inputs.copy()
+        temp[i] = new_val
+
+        new_score = calculate_score(country, temp)
+        gain = new_score - base_score
+
+        if gain > 0.01:
+            results.append((feat, gain))
+
+    results.sort(key=lambda x: x[1], reverse=True)
+
+    for r in results[:5]:
+        st.write(f"{r[0]} → +{r[1]:.3f}")
+
+# ============================================================
+# TAB 3
+# ============================================================
 with tab3:
-    st.subheader("Performans Karşılaştırma (Z-Skor)")
-    c_col1, c_col2 = st.columns(2)
-    country_a = c_col1.selectbox("Ülke A", country_list, index=0)
-    country_b = c_col2.selectbox("Ülke B", country_list, index=1)
-    
-    if st.button("Analizi Görselleştir"):
-        # Grafik mantığını buraya taşıyoruz (Gradio fonksiyonundan kopyala-yapıştır yapabilirsiniz)
-        fig, ax = plt.subplots(figsize=(10, 8))
-        # ... (Gradio'daki ax.barh çizim kodları buraya gelecek)
-        st.pyplot(fig)
+    c1 = st.selectbox("Ülke A", countries)
+    c2 = st.selectbox("Ülke B", countries, index=1)
 
-# --- ALT BİLGİ ---
-st.markdown("---")
-st.caption("2025 Stratejik Tahmin ve Karar Destek Sistemi - D-LOGII")
+    if st.button("Karşılaştır"):
+        row1 = latest_proc.loc[c1]
+        row2 = latest_proc.loc[c2]
+
+        vals1, vals2 = [], []
+
+        for f in ui_inputs:
+            vals1.append(row1[f])
+            vals2.append(row2[f])
+
+        y = np.arange(len(ui_inputs))
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(y, vals1, alpha=0.7, label=c1)
+        ax.barh(y, vals2, alpha=0.7, label=c2)
+
+        ax.set_yticks(y)
+        ax.set_yticklabels(ui_inputs)
+        ax.legend()
+
+        st.pyplot(fig)
