@@ -188,7 +188,7 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
 # --- SEKMELER ---
 t1, t2, t3, t4, t5 = st.tabs(["Senaryo Simülatörü", "Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Scenario Simulator", "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
 
-# SEKME 1: SİMÜLATÖR (HESAPLAMA MOTORU GÜNCELLENDİ)
+# SEKME 1: SİMÜLATÖR (HESAPLAMA KISMI SHAP İLE EŞİTLENDİ)
 with t1:
     st.markdown("### " + ("Senaryo Bazlı Tahmin Simülasyonu" if lang=="tr" else "Scenario-Based Prediction Simulation"))
     
@@ -209,8 +209,9 @@ with t1:
                 user_inputs.append(val)
                 
     if st.button("Tahmini Hesapla / Calculate Forecast", type="primary"):
-        # DÜZELTME: SHAP ile tutarlı olması için calculate_score_engine kullanıldı
+        # HATA DÜZELTME: Doğrudan engine kullanılarak SHAP ile %100 uyum sağlandı
         score, _ = calculate_score_engine(country_sim, user_inputs)
+        
         actual = get_actual_gii(country_sim, lang)
         if lang == "tr":
             st.success(f"**{country_sim} İçin {TARGET_YEAR} GII Tahmini:** {score:.2f}\n\n**{TARGET_YEAR} GII Gerçekleşen Değeri:** {actual}")
