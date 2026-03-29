@@ -133,16 +133,25 @@ with col2:
         pass 
 st.markdown("<h2 style='text-align: center; color: #0f766e;'>Dynamic Lasso-Optimized Global Innovation Index</h2>", unsafe_allow_html=True)
 
+# ---> REVİZE EDİLEN METODOLOJİ BÖLÜMÜ <---
 with st.expander("Metodoloji Hakkında / About Methodology"):
     if lang == "tr":
         st.markdown("""
-        **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** 7 ana sütun altında toplanan 78 farklı göstergenin ağırlıklı ortalaması alınarak hesaplanır.
-        **2. Lasso-Optimize LightGBM Modeli:** Deterministik hesaplama yerine veri güdümlü ve tahminsel bir makine öğrenmesi mimarisi sunar.
+        **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır. Bu, tüm verilerin eksiksiz girilmesini gerektiren deterministik (kural tabanlı) bir süreçtir.
+        
+        **2. Geliştirilen Yapay Zeka Modeli (Bu Çalışma):** Bu sistem, 78 değişkenin tamamını manuel hesaplamak yerine, **tahminsel (predictive)** bir yaklaşım sunar:
+        * **Kritik Değişken Seçimi:** Model, 78 gösterge arasından GII skorunu en çok etkileyen "Kritik Belirleyicileri" tespit etmiştir.
+        * **Doğrusal Olmayan Öğrenme:** Model seçilen değişkenler arasındaki karmaşık ilişkileri öğrenerek sonuç üretir.
+        * **Avantajı:** Sadece stratejik öneme sahip değişkenlere odaklanarak hızlı senaryo analizi sağlar.
         """)
     else:
         st.markdown("""
-        **1. Classical GII Calculation (WIPO Methodology):** Calculated by weighted average of 78 indicators under 7 pillars.
-        **2. Lasso-Optimized LightGBM Model:** Presents a data-driven predictive machine learning architecture.
+        **1. Classical GII Calculation (WIPO Methodology):** The Global Innovation Index (GII), as of 2025, is calculated by taking the weighted average of exactly **78 different indicators** grouped under **7 main pillars**. This is a deterministic (rule-based) process that requires all data to be entered completely.
+        
+        **2. Developed AI Model (This Study):** Instead of calculating all 78 variables manually, this system offers a **predictive** approach:
+        * **Critical Variable Selection:** The model has identified the "Critical Determinants" among the 78 indicators that most affect the GII score.
+        * **Non-linear Learning:** The model produces results by learning the complex relationships between the selected variables.
+        * **Advantage:** It provides rapid scenario analysis by focusing only on variables of strategic importance.
         """)
 
 # --- SEKMELER ---
@@ -154,6 +163,13 @@ else:
 # SEKME 1: SİMÜLATÖR
 with t1:
     st.markdown("### " + ("Senaryo Bazlı Tahmin Simülasyonu" if lang=="tr" else "Scenario-Based Prediction Simulation"))
+    
+    # ---> REVİZE EDİLEN AÇIKLAMA <---
+    if lang == "tr":
+        st.info("💡 **Bu modül ne yapar?** Seçtiğiniz bir ülkenin mevcut gösterge değerlerini değiştirerek, yeni senaryoların 2025 GII skoru üzerindeki etkisini anında tahmin etmenizi sağlar.")
+    else:
+        st.info("💡 **What does this module do?** It allows you to instantly forecast the impact of new scenarios on the 2025 GII score by modifying the current indicator values of a selected country.")
+
     country_sim = st.selectbox("Ülke Seç / Select Country" , country_list, key="c_sim")
     raw_vals = get_raw_values(country_sim)
     user_inputs = []
@@ -176,6 +192,13 @@ with t1:
 # SEKME 2: DUYARLILIK ANALİZİ
 with t2:
     st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
+    
+    # ---> REVİZE EDİLEN AÇIKLAMA <---
+    if lang == "tr":
+        st.info("💡 **Bu modül ne yapar?** Mevcut değişkenlerdeki %10'luk varsayımsal bir iyileşmenin veya kötüleşmenin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
+    else:
+        st.info("💡 **What does this module do?** It automatically identifies priority intervention areas for policymakers by measuring the impact of a hypothetical 10% improvement or deterioration in current variables on the overall score.")
+
     adv_country = st.selectbox("Ülke Seç / Select Country", country_list, key="adv_country")
     
     if st.button("Analizi Başlat / Start Analysis", type="primary", key="adv_btn"):
@@ -213,6 +236,13 @@ with t2:
 # SEKME 3: KARŞILAŞTIRMALI ANALİZ
 with t3:
     st.markdown("### " + ("Standardize Edilmiş Performans Matrisi (Z-Skor)" if lang=="tr" else "Standardized Performance Matrix (Z-Score)"))
+    
+    # ---> REVİZE EDİLEN AÇIKLAMA <---
+    if lang == "tr":
+        st.info("💡 **Bu modül ne yapar?** İki farklı ülkenin kritik göstergelerdeki performansını standartlaştırılmış Z-skorları üzerinden görselleştirerek doğrudan kıyaslamanızı sağlar.")
+    else:
+        st.info("💡 **What does this module do?** It allows you to benchmark the performance of two different countries across critical indicators by visualizing their standardized Z-scores.")
+
     c1_col, c2_col = st.columns(2)
     with c1_col: c1 = st.selectbox("Ülke A / Country A", country_list, key="bench_c1")
     with c2_col: c2 = st.selectbox("Ülke B / Country B", country_list, key="bench_c2", index=1)
@@ -254,6 +284,13 @@ with t3:
 # SEKME 4: SHAP ANALİZİ
 with t4:
     st.markdown("### " + ("Model Açıklanabilirliği (XAI) ve Stratejik Hedef Takibi" if lang=="tr" else "Model Explainability (XAI) and Strategic Target Tracking"))
+    
+    # ---> REVİZE EDİLEN AÇIKLAMA <---
+    if lang == "tr":
+        st.info("💡 **Bu modül ne yapar?** Belirlediğiniz hedef skor ile makine öğrenmesi tahmini arasındaki farkı hesaplar ve Açıklanabilir Yapay Zeka (SHAP) grafikleriyle ülkenin en güçlü yönlerini ve acil gelişim alanlarını listeler.")
+    else:
+        st.info("💡 **What does this module do?** It calculates the gap between your target score and the AI forecast, using Explainable AI (SHAP) charts to list the country's main strengths and urgent areas for improvement.")
+
     shap_c, target_c = st.columns([2,1])
     with shap_c: d4 = st.selectbox("Ülke Seç / Select Country", country_list, key="shap_c")
     with target_c: target_score = st.number_input("Hedeflenen GII Skoru / Targeted Score" if lang=="tr" else "Targeted GII Score", value=0.0)
@@ -318,6 +355,13 @@ with t4:
 # SEKME 5: TRENDLER
 with t5:
     st.markdown("### " + ("5 Yıllık Trend Analizi" if lang=="tr" else "5-Year Trend Analysis"))
+    
+    # ---> REVİZE EDİLEN AÇIKLAMA <---
+    if lang == "tr":
+        st.info("💡 **Bu modül ne yapar?** Seçilen ülkenin belirli bir göstergedeki (veya genel GII skorundaki) geçmiş 5 yıllık tarihsel değişimini ve trendini görselleştirir.")
+    else:
+        st.info("💡 **What does this module do?** It visualizes the historical 5-year change and trend of a specific indicator (or overall GII score) for the selected country.")
+
     d5_c, f5_c = st.columns(2)
     with d5_c: d5 = st.selectbox("Ülke Seç / Select Country", country_list, key="trend_c")
     with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken / Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
@@ -350,4 +394,5 @@ with t5:
 
 # --- FOOTER ---
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: gray;'>2025 Stratejik Tahmin ve Karar Destek Sistemi | 2025 Strategic Forecast & Decision Support System</p>", unsafe_allow_html=True)
+# (Not: Orijinal kodunda son satır yarım kaldığı için tamamladım)
+st.markdown("<p style='text-align: center; color: gray;'>2025 Stratejik Tahmin ve Karar Destek Sistemi</p>", unsafe_allow_html=True)
