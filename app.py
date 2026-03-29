@@ -391,6 +391,12 @@ with t5:
             ))
         
         if st.button("Değerleri Sıfırla / Reset Values" if lang=="tr" else "Reset Values"):
+            # Mevcut simülasyon ülkesine ait tüm input key'lerini temizle
+            for key in list(st.session_state.keys()):
+                if key.startswith(f"input_{sim_country}_"):
+                    del st.session_state[key]
+            
+            # Sayfayı yenile (Değerler silindiği için default 'current_val' değerlerine dönecektir)
             st.rerun()
 
     # Alt kısma küçük bir karşılaştırma tablosu
