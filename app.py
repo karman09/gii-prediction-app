@@ -188,7 +188,7 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
 # --- SEKMELER ---
 t1, t2, t3, t4, t5 = st.tabs(["Senaryo Simülatörü", "Duyarlılık Analizi", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi"] if lang=="tr" else ["Scenario Simulator", "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis"])
 
-# SEKME 1: SİMÜLATÖR (KESİN ÇÖZÜM - SHAP İLE BİREBİR AYNI VERİ AKIŞI)
+# SEKME 1: SİMÜLATÖR (SHAP İLE %100 SENKRONİZE EDİLMİŞ VERSİYON)
 with t1:
     st.markdown("### " + ("Senaryo Bazlı Tahmin Simülasyonu" if lang=="tr" else "Scenario-Based Prediction Simulation"))
     
@@ -198,6 +198,8 @@ with t1:
         st.info("💡 **This module** allows you to instantly forecast the impact of new scenarios on the 2025 GII score by modifying the current indicator values of a selected country.")
 
     country_sim = st.selectbox("Ülke Seç / Select Country" , country_list, key="c_sim")
+    
+    # 1. Mevcut ham değerleri al
     raw_vals = get_raw_values(country_sim)
     user_inputs = []
     
@@ -205,40 +207,51 @@ with t1:
         cols = st.columns(2)
         for i, name in enumerate(ui_input_names):
             with cols[i % 2]:
+                # Kullanıcı girişini tanımla
                 val = st.number_input(name, value=float(raw_vals[i]), format="%.5f", key=f"inp_{name}")
                 user_inputs.append(val)
                 
     if st.button("Tahmini Hesapla / Calculate Forecast", type="primary"):
         try:
-            # SHAP'ın kullandığı mantıkla model_input oluşturma
-            model_input_sim = pd.DataFrame(0.0, index=[0], columns=model_features)
+            # 2. Boş bir girdi DataFrame'i oluştur (Modelin tam beklediği sütun yapısında)
+            model_input_final = pd.DataFrame(0.0, index=[0], columns=model_features)
             
+            # 3. Manuel Scaling ve Mapping (SHAP ile aynı matematiksel yol)
             for i, feat_ui in enumerate(ui_input_names):
                 u_val = float(user_inputs[i])
-                idx = scaler_cols.index(feat_ui)
                 
-                # Manuel Scaling (SHAP ve Modelin beklediği standartlaştırma)
-                new_scaled = (u_val - scaler.mean_[idx]) / scaler.scale_[idx]
-                
-                # Maliyet yönlü sütun kontrolü
-                if feat_ui.lower().strip() in cost_cols:
-                    new_scaled = -new_scaled
-                
-                model_input_sim.at[0, feature_map[feat_ui]] = new_scaled
+                # Scaler içindeki doğru indeksi bul
+                if feat_ui in scaler_cols:
+                    idx = scaler_cols.index(feat_ui)
+                    
+                    # Standartlaştırma: (x - mean) / std
+                    scaled_val = (u_val - scaler.mean_[idx]) / scaler.scale_[idx]
+                    
+                    # Maliyet sütunu ise ters çevir (Modelin eğitildiği yapı)
+                    if feat_ui.lower().strip() in cost_cols:
+                        scaled_val = -scaled_val
+                    
+                    # Teknik ismi bul (Örn: 'Gösterge' -> 'Gösterge_lag2')
+                    tech_feature_name = feature_map.get(feat_ui)
+                    if tech_feature_name:
+                        model_input_final.at[0, tech_feature_name] = scaled_val
+
+            # 4. Tahmin Üret
+            prediction_raw = model.predict(model_input_final)[0]
+            final_score = max(0, min(100, prediction_raw))
             
-            # Tahmin
-            raw_pred = model.predict(model_input_sim)[0]
-            score = max(0, min(100, raw_pred))
-            
-            # Sonuç Gösterimi
-            actual = get_actual_gii(country_sim, lang)
+            # 5. Sonuçları Bas
+            actual_val = get_actual_gii(country_sim, lang)
             if lang == "tr":
-                st.success(f"**{country_sim} İçin {TARGET_YEAR} GII Tahmini:** {score:.2f}\n\n**{TARGET_YEAR} GII Gerçekleşen Değeri:** {actual}")
+                st.success(f"**{country_sim} İçin {TARGET_YEAR} GII Tahmini:** {final_score:.2f}\n\n**{TARGET_YEAR} GII Gerçekleşen Değeri:** {actual_val}")
             else:
-                st.success(f"**{TARGET_YEAR} GII Forecast for {country_sim}:** {score:.2f}\n\n**{TARGET_YEAR} GII Actual Value:** {actual}")
-                
+                st.success(f"**{TARGET_YEAR} GII Forecast for {country_sim}:** {final_score:.2f}\n\n**{TARGET_YEAR} GII Actual Value:** {actual_val}")
+            
+            # (Opsiyonel) Debug: Eğer hala fark varsa konsola değerleri basar
+            # print(model_input_final.values) 
+
         except Exception as e:
-            st.error(f"Hesaplama Hatası: {e}")
+            st.error(f"Simülasyon Hatası / Simulation Error: {str(e)}")
 
 # SEKME 2: DUYARLILIK ANALİZİ
 with t2:
