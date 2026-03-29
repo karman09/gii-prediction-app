@@ -24,32 +24,37 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ============================================================
-# 2. DATA LOADING (CACHED)
+# ============================================================
+# 2. DATA LOADING (LOCAL / GITHUB FILES)
 # ============================================================
 @st.cache_resource
 def load_all_data():
-    HF_TOKEN = os.environ.get("HF_TOKEN")
-    REPO_ID = "karman09/D-LOGII-Data"
-    
-    def fetch_file(file_name):
-        return hf_hub_download(repo_id=REPO_ID, filename=file_name, repo_type="dataset", token=HF_TOKEN)
-
     try:
-        raw_data_path = fetch_file("FINAL_DATA.xlsx")
-        proc_data_path = fetch_file("FINAL_PREPROCESSED_DATA.xlsx")
-        scaler = joblib.load(fetch_file("SCALER.pkl"))
-        scaler_cols = joblib.load(fetch_file("SCALER_COLUMNS.pkl"))
-        cost_cols = joblib.load(fetch_file("COST_COLS.pkl"))
-        model = joblib.load(fetch_file("BEST_MODEL.pkl"))
-        model_features = joblib.load(fetch_file("BEST_MODEL_FEATURES.pkl"))
+        # Dosyalar GitHub reposunun ana dizinindeyse isimlerini yazman yeterli
+        # Eğer bir klasör içindeyse "data/FINAL_DATA.xlsx" gibi yazmalısın
+        raw_data_path      = "FINAL_DATA.xlsx"
+        proc_data_path     = "FINAL_PREPROCESSED_DATA.xlsx"
+        scaler_path        = "SCALER.pkl"
+        scaler_cols_path   = "SCALER_COLUMNS.pkl"
+        cost_cols_path     = "COST_COLS.pkl"
+        model_path         = "BEST_MODEL.pkl"
+        features_path      = "BEST_MODEL_FEATURES.pkl"
         
+        # Dosyaları yükle
         df_raw = pd.read_excel(raw_data_path)
         df_proc = pd.read_excel(proc_data_path)
+        scaler = joblib.load(scaler_path)
+        scaler_cols = joblib.load(scaler_cols_path)
+        cost_cols = joblib.load(cost_cols_path)
+        model = joblib.load(model_path)
+        model_features = joblib.load(features_path)
+        
         return df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features
     except Exception as e:
-        st.error(f"Veri yükleme hatası: {e}")
+        st.error(f"Dosya yükleme hatası: {e}. Lütfen dosyaların GitHub'da doğru isimle yüklendiğinden emin olun.")
         return None
 
+# Verileri çek
 data_bundle = load_all_data()
 if data_bundle:
     df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features = data_bundle
