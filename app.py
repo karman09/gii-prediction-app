@@ -1,6 +1,6 @@
 # ============================================================
-# D-LOGII STREAMLIT DASHBOARD (REVIZED - DEPLOY READY)
-# 
+# D-LOGII STREAMLIT DASHBOARD (FULL VERSION)
+# Mantık birebir korunmuştur
 # ============================================================
 
 import streamlit as st
@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 import re
 import math
 import shap
+import os
 
 # ============================================================
-# CONFIG
+# PAGE CONFIG
 # ============================================================
 st.set_page_config(page_title="D-LOGII Dashboard", layout="wide")
 
@@ -22,19 +23,27 @@ LAG_PERIOD = 2
 INPUT_YEAR = TARGET_YEAR - LAG_PERIOD
 
 # ============================================================
-# LOAD DATA
+# PATH SETUP (CRITICAL FIX)
+# ============================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def path(*args):
+    return os.path.join(BASE_DIR, *args)
+
+# ============================================================
+# LOAD SYSTEM
 # ============================================================
 @st.cache_resource
 def load_system():
-    df_raw = pd.read_excel("data/FINAL_DATA.xlsx")
-    df_proc = pd.read_excel("data/FINAL_PREPROCESSED_DATA.xlsx")
+    df_raw = pd.read_excel(path("data", "FINAL_DATA.xlsx"))
+    df_proc = pd.read_excel(path("data", "FINAL_PREPROCESSED_DATA.xlsx"))
 
-    scaler = joblib.load("models/SCALER.pkl")
-    scaler_cols = joblib.load("models/SCALER_COLUMNS.pkl")
-    cost_cols = joblib.load("models/COST_COLS.pkl")
+    scaler = joblib.load(path("models", "SCALER.pkl"))
+    scaler_cols = joblib.load(path("models", "SCALER_COLUMNS.pkl"))
+    cost_cols = joblib.load(path("models", "COST_COLS.pkl"))
 
-    model = joblib.load("models/BEST_MODEL.pkl")
-    model_features = joblib.load("models/BEST_MODEL_FEATURES.pkl")
+    model = joblib.load(path("models", "BEST_MODEL.pkl"))
+    model_features = joblib.load(path("models", "BEST_MODEL_FEATURES.pkl"))
 
     return df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features
 
@@ -65,8 +74,10 @@ for feat in model_features:
         feature_map[orig] = feat
         ui_inputs.append(orig)
 
+reverse_feature_map = {v: k for k, v in feature_map.items()}
+
 # ============================================================
-# CORE LOGIC (UNCHANGED)
+# CORE FUNCTION (UNCHANGED)
 # ============================================================
 def calculate_score(country, inputs):
     row_raw = latest_raw.loc[country]
@@ -80,7 +91,7 @@ def calculate_score(country, inputs):
         base_val = row_raw.get(feat, 0.0)
         base_val = 0.0 if pd.isna(base_val) else float(base_val)
 
-        if math.isclose(user_val, base_val):
+        if math.isclose(user_val, base_val, rel_tol=1e-5):
             final_val = row_proc[feat]
         else:
             idx = scaler_cols.index(feat)
@@ -100,21 +111,47 @@ def calculate_score(country, inputs):
     return max(0, min(100, pred))
 
 # ============================================================
-# UI
+# SHAP FUNCTION
 # ============================================================
-st.title("D-LOGII Dashboard")
+def get_shap(country):
+    row_proc = latest_proc.loc[country]
+
+    model_input = pd.DataFrame(0.0, index=[0], columns=model_features)
+
+    for feat in ui_inputs:
+        model_input.at[0, feature_map[feat]] = row_proc[feat]
+
+    explainer = shap.Explainer(model)
+    shap_values = explainer(model_input)
+
+    fig = plt.figure(figsize=(8, 5))
+    shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+    plt.tight_layout()
+
+    return fig
+
+# ============================================================
+# HEADER
+# ============================================================
+st.title("D-LOGII")
 st.caption("Dynamic Lasso-Optimized Global Innovation Index")
 
-tab1, tab2, tab3 = st.tabs([
+# ============================================================
+# TABS
+# ============================================================
+tab1, tab2, tab3, tab4 = st.tabs([
     "Simülatör",
     "Duyarlılık",
-    "Karşılaştırma"
+    "Karşılaştırma",
+    "SHAP Analizi"
 ])
 
 # ============================================================
-# TAB 1
+# TAB 1 - SIMULATOR
 # ============================================================
 with tab1:
+    st.subheader("Senaryo Simülatörü")
+
     country = st.selectbox("Ülke", countries)
 
     row = latest_raw.loc[country]
@@ -131,13 +168,15 @@ with tab1:
 
     if st.button("Tahmin Hesapla"):
         score = calculate_score(country, inputs)
-        st.success(f"Tahmini GII ({TARGET_YEAR}): {score:.2f}")
+        st.success(f"{TARGET_YEAR} GII Tahmini: {score:.2f}")
 
 # ============================================================
-# TAB 2
+# TAB 2 - SENSITIVITY
 # ============================================================
 with tab2:
-    country = st.selectbox("Ülke Seç", countries, key="sens")
+    st.subheader("Duyarlılık Analizi")
+
+    country = st.selectbox("Ülke", countries, key="sens")
 
     inputs = latest_raw.loc[country].fillna(0).tolist()[:len(ui_inputs)]
     base_score = calculate_score(country, inputs)
@@ -167,9 +206,11 @@ with tab2:
         st.write(f"{r[0]} → +{r[1]:.3f}")
 
 # ============================================================
-# TAB 3
+# TAB 3 - COMPARISON
 # ============================================================
 with tab3:
+    st.subheader("Karşılaştırma")
+
     c1 = st.selectbox("Ülke A", countries)
     c2 = st.selectbox("Ülke B", countries, index=1)
 
@@ -193,4 +234,16 @@ with tab3:
         ax.set_yticklabels(ui_inputs)
         ax.legend()
 
+        st.pyplot(fig)
+
+# ============================================================
+# TAB 4 - SHAP
+# ============================================================
+with tab4:
+    st.subheader("SHAP Analizi")
+
+    country = st.selectbox("Ülke", countries, key="shap")
+
+    if st.button("SHAP Oluştur"):
+        fig = get_shap(country)
         st.pyplot(fig)
