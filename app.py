@@ -90,18 +90,23 @@ def calculate_score(country_name, raw_inputs_list):
             base_raw_val = row_raw.get(feat_ui, np.nan)
             displayed_base_val = 0.0 if pd.isna(base_raw_val) else float(base_raw_val)
             
+            # EĞER DEĞER DEĞİŞMEDİYSE: İşlenmiş veriden model ismini kullanarak çek (Düzeltilen kısım)
             if math.isclose(user_val, displayed_base_val, rel_tol=1e-5, abs_tol=1e-5):
-                final_scaled_feat = row_proc[feat_ui]
+                final_scaled_feat = row_proc[feature_map[feat_ui]]
+            
+            # EĞER DEĞER DEĞİŞTİYSE: Manuel olarak ölçeklendir
             else:
                 idx = scaler_cols.index(feat_ui)
                 new_scaled = (user_val - scaler.mean_[idx]) / scaler.scale_[idx]
-                if feat_ui.lower().strip() in cost_cols: new_scaled = -new_scaled
+                if feat_ui.lower().strip() in cost_cols: 
+                    new_scaled = -new_scaled
                 final_scaled_feat = new_scaled
                 
             model_input.at[0, feature_map[feat_ui]] = final_scaled_feat
             
         return max(0, min(100, model.predict(model_input)[0]))
-    except Exception:
+    except Exception as e:
+        # Hata ayıklama için geçici olarak print(e) ekleyebilirsin
         return 0.0
 
 def get_actual_gii(country, lang):
