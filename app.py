@@ -1,4 +1,4 @@
-# ==============================================================================
+# ============================================================================== 
 # GII 2025 STRATEGY DASHBOARD (LOCAL GITHUB BILINGUAL FULL VERSION)
 # ==============================================================================
 import streamlit as st
@@ -81,6 +81,7 @@ def get_raw_values(country_name):
 
 # KOD 2'DEN ALINAN HESAPLAMA FONKSİYONU (SEKME 1 İÇİN)
 def calculate_score(country_name, raw_inputs_list):
+    """Kod 1 ile birebir aynı çalışan hassas hesaplama motoru"""
     try:
         if country_name not in latest_data_raw.index: return 0.0
         row_raw = latest_data_raw.loc[country_name]
@@ -92,18 +93,23 @@ def calculate_score(country_name, raw_inputs_list):
             base_raw_val = row_raw.get(feat_ui, np.nan)
             displayed_base_val = 0.0 if pd.isna(base_raw_val) else float(base_raw_val)
             
+            # Kod 1'deki hibrit mantık: Değer değişmemişse orijinal işlenmiş veriyi kullan
             if math.isclose(user_val, displayed_base_val, rel_tol=1e-5, abs_tol=1e-5):
                 final_scaled_feat = row_proc[feat_ui]
             else:
                 idx = scaler_cols.index(feat_ui)
-                new_scaled = (user_val - scaler.mean_[idx]) / scaler.scale_[idx]
-                if feat_ui.lower().strip() in cost_cols: new_scaled = -new_scaled
+                mean_val = scaler.mean_[idx]
+                scale_val = scaler.scale_[idx]
+                new_scaled = (user_val - mean_val) / scale_val
+                if feat_ui.lower().strip() in cost_cols:
+                    new_scaled = -new_scaled
                 final_scaled_feat = new_scaled
-                
+            
             model_input.at[0, feature_map[feat_ui]] = final_scaled_feat
             
-        return max(0, min(100, model.predict(model_input)[0]))
-    except Exception:
+        pred = model.predict(model_input)[0]
+        return max(0, min(100, pred))
+    except Exception as e:
         return 0.0
 
 def calculate_score_engine(country_name, raw_inputs_list):
@@ -213,29 +219,18 @@ with t1:
                 
     if st.button("Tahmini Hesapla / Calculate Forecast", type="primary"):
         try:
-            # 2. Boş bir girdi DataFrame'i oluştur (Modelin tam beklediği sütun yapısında)
-            model_input_final = pd.DataFrame(0.0, index=[0], columns=model_features)
+            # Yukarıda düzelttiğimiz fonksiyonu çağırıyoruz
+            final_score = calculate_score(country_sim, user_inputs)
             
-            # 3. Manuel Scaling ve Mapping (SHAP ile aynı matematiksel yol)
-            for i, feat_ui in enumerate(ui_input_names):
-                u_val = float(user_inputs[i])
+            actual_val = get_actual_gii(country_sim, lang)
+            if lang == "tr":
+                st.success(f"**{country_sim} İçin {TARGET_YEAR} GII Tahmini:** {final_score:.2f}\n\n**{TARGET_YEAR} GII Gerçekleşen Değeri:** {actual_val}")
+            else:
+                st.success(f"**{TARGET_YEAR} GII Forecast for {country_sim}:** {final_score:.2f}\n\n**{TARGET_YEAR} GII Actual Value:** {actual_val}")
                 
-                # Scaler içindeki doğru indeksi bul
-                if feat_ui in scaler_cols:
-                    idx = scaler_cols.index(feat_ui)
-                    
-                    # Standartlaştırma: (x - mean) / std
-                    scaled_val = (u_val - scaler.mean_[idx]) / scaler.scale_[idx]
-                    
-                    # Maliyet sütunu ise ters çevir (Modelin eğitildiği yapı)
-                    if feat_ui.lower().strip() in cost_cols:
-                        scaled_val = -scaled_val
-                    
-                    # Teknik ismi bul (Örn: 'Gösterge' -> 'Gösterge_lag2')
-                    tech_feature_name = feature_map.get(feat_ui)
-                    if tech_feature_name:
-                        model_input_final.at[0, tech_feature_name] = scaled_val
-
+        except Exception as e:
+            st.error(f"Simülasyon Hatası / Simulation Error: {str(e)}")
+            
             # 4. Tahmin Üret
             prediction_raw = model.predict(model_input_final)[0]
             final_score = max(0, min(100, prediction_raw))
