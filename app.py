@@ -12,6 +12,7 @@ import shap
 import io
 import tempfile 
 from fpdf import FPDF # terminal: pip install fpdf2
+import plotly.express as px # YENİ EKLENEN: Harita ve ısı haritası için (terminal: pip install plotly)
 
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
@@ -249,11 +250,11 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
         
-# --- TABS (ORDER UPDATED: 1 and 5 SWAPPED) ---
-t1, t2, t3, t4, t5 = st.tabs([
-    "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi"
+# --- TABS (ORDER UPDATED & NEW TABS ADDED) ---
+t1, t2, t3, t4, t5, t6, t7 = st.tabs([
+    "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi", "Küresel Sıralama ve Harita", "Veri Keşfi ve Korelasyon"
 ] if lang=="tr" else [
-    "Scenario Simulator", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Sensitivity Analysis"
+    "Scenario Simulator", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Sensitivity Analysis", "Global Leaderboard & Map", "Data Explorer & Correlation"
 ])
 
 # ============================================================
@@ -575,6 +576,102 @@ with t5:
             mime="application/pdf",
             key="dl_t5_new"
         )
+
+
+# ============================================================
+# TAB 6: GLOBAL LEADERBOARD & MAP (YENİ EKLENEN SEKME)
+# ============================================================
+with t6:
+    st.markdown("### " + ("Küresel Sıralama ve Harita" if lang=="tr" else "Global Leaderboard & Map"))
+    st.info("💡 " + (
+        "Tüm ülkelerin 2025 tahmin skorlarını ve gerçekleşen değerlerini harita üzerinde görselleştirebilir ve performanslarını tek bir tabloda inceleyebilirsiniz." 
+        if lang=="tr" else 
+        "You can visualize the 2025 forecast scores and actual values of all countries on the map and examine their performance in a single table."
+    ))
+    
+    if st.button("Harita ve Sıralamayı Yükle / Load Map & Leaderboard", key="load_map_btn"):
+        with st.spinner("Hesaplanıyor... / Calculating..." if lang=="tr" else "Calculating..."):
+            map_data = []
+            for c in country_list:
+                p, _ = calculate_score_engine(c, get_raw_values(c))
+                act_str = get_actual_gii(c, lang)
+                
+                # Try to convert actual value to float, else put NaN
+                try:
+                    act_val = float(act_str)
+                except ValueError:
+                    act_val = np.nan
+                    
+                map_data.append({
+                    "Ülke / Country": c, 
+                    "Tahmin / Forecast": p, 
+                    "Gerçekleşen / Actual": act_val
+                })
+            
+            df_map = pd.DataFrame(map_data)
+            
+            col_m1, col_m2 = st.columns([1, 2])
+            
+            with col_m1:
+                st.write("**Sıralama Tablosu / Leaderboard**" if lang=="tr" else "**Leaderboard**")
+                # Drop rows if needed or just display all, sorting by forecast
+                st.dataframe(
+                    df_map.sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
+                    use_container_width=True
+                )
+            
+            with col_m2:
+                st.write("**Küresel Harita / Global Map**" if lang=="tr" else "**Global Map**")
+                
+                # Radio button to select what to display on the map
+                map_choice = st.radio(
+                    "Harita Değeri / Map Value", 
+                    ["Tahmin / Forecast", "Gerçekleşen / Actual"], 
+                    horizontal=True
+                )
+                
+                fig_map = px.choropleth(
+                    df_map, 
+                    locations="Ülke / Country", 
+                    locationmode="country names",
+                    color=map_choice,
+                    hover_name="Ülke / Country",
+                    color_continuous_scale="Viridis",
+                    title=f"GII 2025 - {map_choice}"
+                )
+                fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+                st.plotly_chart(fig_map, use_container_width=True)
+
+
+# ============================================================
+# TAB 7: DATA EXPLORER & CORRELATION (YENİ EKLENEN SEKME)
+# ============================================================
+with t7:
+    st.markdown("### " + ("Veri Keşfi ve Korelasyon" if lang=="tr" else "Data Explorer & Correlation"))
+    st.info("💡 " + (
+        "Modelde kullanılan temel değişkenler arasındaki ilişkileri ve ülkelerin ham verilerini buradan inceleyebilirsiniz." 
+        if lang=="tr" else 
+        "You can explore the relationships between the base variables used in the model and the raw data of the countries here."
+    ))
+    
+    st.write("**Ham Veri Tablosu / Raw Data Table**" if lang=="tr" else "**Raw Data Table**")
+    st.dataframe(latest_data_raw[ui_input_names], use_container_width=True)
+    
+    st.write("---")
+    st.write("**Değişkenler Arası Korelasyon / Correlation Matrix**" if lang=="tr" else "**Correlation Matrix**")
+    
+    if st.button("Korelasyon Matrisini Çiz / Plot Correlation", key="corr_btn"):
+        with st.spinner("Isı Haritası Oluşturuluyor... / Generating Heatmap..." if lang=="tr" else "Generating Heatmap..."):
+            corr_matrix = latest_data_raw[ui_input_names].corr()
+            fig_corr = px.imshow(
+                corr_matrix, 
+                text_auto=False, 
+                aspect="auto", 
+                color_continuous_scale="RdBu_r",
+                title="Değişken Korelasyon Isı Haritası / Variable Correlation Heatmap"
+            )
+            fig_corr.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+            st.plotly_chart(fig_corr, use_container_width=True)
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
