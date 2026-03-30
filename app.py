@@ -728,5 +728,20 @@ with t7:
             fig_corr.update_layout(margin=dict(l=0, r=0, t=30, b=0))
             st.plotly_chart(fig_corr, use_container_width=True)
 
+# ============================================================
+# FOOTER & DATA SOURCE ATTRIBUTION
+# ============================================================
 st.markdown("---")
-st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
+
+footer_html = f"""
+<div style='text-align: center; color: gray; font-size: 0.9em; line-height: 1.5;'>
+    <strong>{TARGET_YEAR} Strategic Decision Support System</strong><br>
+    <span style='font-size: 0.85em;'>
+        Veri Kaynağı / Data Source: 
+        <a href='https://www.wipo.int/en/web/global-innovation-index' target='_blank' style='color: #2874A6; text-decoration: none; font-weight: 600;'>
+            Global Innovation Index (WIPO)
+        </a>
+    </span>
+</div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
