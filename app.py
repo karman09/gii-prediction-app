@@ -10,7 +10,7 @@ import re
 import math
 import shap
 import io
-import tempfile
+import tempfile 
 from fpdf import FPDF # terminalde: pip install fpdf2
 
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
