@@ -579,6 +579,7 @@ with t5:
 
 
 # ============================================================
+# ============================================================
 # TAB 6: GLOBAL LEADERBOARD & MAP (YENİ EKLENEN SEKME)
 # ============================================================
 with t6:
@@ -610,13 +611,38 @@ with t6:
             
             df_map = pd.DataFrame(map_data)
             
+            # ---> YENİ EKLENEN: Plotly harita uyumluluğu için eşleştirme sözlüğü <---
+            country_name_mapping = {
+                "Turkiye": "Turkey",
+                "Türkiye": "Turkey",
+                "United States": "United States of America",
+                "USA": "United States of America",
+                "UK": "United Kingdom",
+                "Great Britain": "United Kingdom",
+                "Czechia": "Czech Republic",
+                "South Korea": "Korea, Republic of Korea",
+                "Russia": "Russian Federation",
+                "Russian Fed.": "Russian Federation",
+                "Iran": "Iran, Islamic Republic of",
+                "Vietnam": "Viet Nam",
+                "Moldova": "Moldova, Republic of",
+                "Bolivia": "Bolivia, Plurinational State of",
+                "Venezuela": "Venezuela, Bolivarian Republic of",
+                "Ivory Coast": "Cote d'Ivoire",
+                "Taiwan": "Taiwan, Province of China"
+                # Veri setinde haritada gri kalan
+            }
+            
+            # Sadece harita çiziminde kullanılması için gizli bir sütun açıyoruz
+            df_map["Harita_Icin_Ulke"] = df_map["Ülke / Country"].replace(country_name_mapping)
+            
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
                 st.write("**Sıralama Tablosu / Leaderboard**" if lang=="tr" else "**Leaderboard**")
-                # Drop rows if needed or just display all, sorting by forecast
+                # Tabloda orijinal isimler görünmeye devam edecek, yeni sütunu düşürüp gösteriyoruz
                 st.dataframe(
-                    df_map.sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
+                    df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
                     use_container_width=True
                 )
             
@@ -625,11 +651,12 @@ with t6:
                 
                 fig_map = px.choropleth(
                     df_map, 
-                    locations="Ülke / Country", 
+                    locations="Harita_Icin_Ulke", # Harita için eşleştirilmiş İngilizce isimleri kullanıyoruz
                     locationmode="country names",
                     color="Tahmin / Forecast",
-                    hover_name="Ülke / Country",
+                    hover_name="Ülke / Country", # Fare üzerine gelince orijinal isim görünecek
                     hover_data={
+                        "Harita_Icin_Ulke": False, # Hover penceresinde bu teknik sütunu gizliyoruz
                         "Ülke / Country": False, 
                         "Tahmin / Forecast": True, 
                         "Gerçekleşen / Actual": True
@@ -640,7 +667,7 @@ with t6:
                 
                 # Ülkeleri belli etmek için kırmızı noktalar (marker) ekliyoruz
                 fig_map.add_scattergeo(
-                    locations=df_map["Ülke / Country"],
+                    locations=df_map["Harita_Icin_Ulke"], # Burada da eşleştirilmiş isimleri kullanıyoruz
                     locationmode="country names",
                     marker=dict(color="red", size=4, symbol="circle"),
                     hoverinfo="skip" # Alt katmandaki hover zaten çalıştığı için bunu gizliyoruz
