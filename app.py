@@ -623,7 +623,6 @@ with t6:
             with col_m2:
                 st.write("**Küresel Harita / Global Map**" if lang=="tr" else "**Global Map**")
                 
-                # SADECE BURASI DEĞİŞTİ: Radyo butonu kaldırıldı, hover_data eklendi
                 fig_map = px.choropleth(
                     df_map, 
                     locations="Ülke / Country", 
@@ -631,13 +630,22 @@ with t6:
                     color="Tahmin / Forecast",
                     hover_name="Ülke / Country",
                     hover_data={
-                        "Ülke / Country": False, # İsim başlıkta zaten çıkacağı için burada False yaptık
+                        "Ülke / Country": False, 
                         "Tahmin / Forecast": True, 
                         "Gerçekleşen / Actual": True
                     },
                     color_continuous_scale="Viridis",
                     title="GII 2025 - Tahmin / Forecast"
                 )
+                
+                # Ülkeleri belli etmek için kırmızı noktalar (marker) ekliyoruz
+                fig_map.add_scattergeo(
+                    locations=df_map["Ülke / Country"],
+                    locationmode="country names",
+                    marker=dict(color="red", size=4, symbol="circle"),
+                    hoverinfo="skip" # Alt katmandaki hover zaten çalıştığı için bunu gizliyoruz
+                )
+                
                 fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig_map, use_container_width=True)
 
