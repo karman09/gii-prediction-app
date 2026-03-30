@@ -623,21 +623,20 @@ with t6:
             with col_m2:
                 st.write("**Küresel Harita / Global Map**" if lang=="tr" else "**Global Map**")
                 
-                # Radio button to select what to display on the map
-                map_choice = st.radio(
-                    "Harita Değeri / Map Value", 
-                    ["Tahmin / Forecast", "Gerçekleşen / Actual"], 
-                    horizontal=True
-                )
-                
+                # SADECE BURASI DEĞİŞTİ: Radyo butonu kaldırıldı, hover_data eklendi
                 fig_map = px.choropleth(
                     df_map, 
                     locations="Ülke / Country", 
                     locationmode="country names",
-                    color=map_choice,
+                    color="Tahmin / Forecast",
                     hover_name="Ülke / Country",
+                    hover_data={
+                        "Ülke / Country": False, # İsim başlıkta zaten çıkacağı için burada False yaptık
+                        "Tahmin / Forecast": True, 
+                        "Gerçekleşen / Actual": True
+                    },
                     color_continuous_scale="Viridis",
-                    title=f"GII 2025 - {map_choice}"
+                    title="GII 2025 - Tahmin / Forecast"
                 )
                 fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig_map, use_container_width=True)
