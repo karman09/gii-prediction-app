@@ -16,26 +16,29 @@ from fpdf import FPDF # terminalde: pip install fpdf2
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
 # ============================================================
-# PDF OLUŞTURMA YARDIMCI FONKSİYONU (YENİ EKLENDİ)
+# ============================================================
+# PDF OLUŞTURMA YARDIMCI FONKSİYONU (GÜNCELLENDİ)
 # ============================================================
 def generate_pdf_report(title, text_content="", fig=None):
     """Metin ve grafikleri alıp PDF byte verisine çeviren yardımcı fonksiyon."""
-    # Türkçe karakterlerin standart FPDF fontunda hata vermemesi için dönüştürme
-    tr_map = str.maketrans("ğüşiöçĞÜŞİÖÇI", "gusıocGUSIOCI")
+    # Türkçe karakterleri standart İngilizce karakterlere dönüştüren harita (ı -> i yapıldı)
+    tr_map = str.maketrans("ğüşiöçĞÜŞİÖÇıI", "gusiocGUSIOCiI")
     
     pdf = FPDF()
     pdf.add_page()
     
     # Başlık
     pdf.set_font("Helvetica", 'B', 16)
-    safe_title = str(title).translate(tr_map)
+    # 1. Türkçe karakterleri çevir
+    # 2. encode/decode işlemiyle FPDF'in tanımadığı tüm özel sembolleri (uzun çizgi, süslü tırnak vb.) yok say (ignore)
+    safe_title = str(title).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
     pdf.cell(0, 10, txt=safe_title, ln=True, align='C')
     pdf.ln(10)
     
     # Metin
     if text_content:
         pdf.set_font("Helvetica", size=11)
-        safe_text = str(text_content).translate(tr_map)
+        safe_text = str(text_content).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
         for line in safe_text.split('\n'):
             pdf.multi_cell(0, 8, txt=line)
         pdf.ln(5)
