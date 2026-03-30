@@ -2,8 +2,9 @@ streamlit
 pandas
 numpy
 scikit-learn
+joblib
 matplotlib
-openpyxl
 shap
-lightgbm
 fpdf2
+plotly
+openpyxl
