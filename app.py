@@ -16,91 +16,57 @@ from fpdf import FPDF # terminalde: pip install fpdf2
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
 # ============================================================
-# UI/UX PROFESYONELLEŞTİRME (CSS ENJEKSİYONU)
+# PROFESYONEL TEMA VE ARAYÜZ CSS ENJEKSİYONU
 # ============================================================
-st.markdown("""
+custom_css = """
 <style>
-    /* Ana arka planı çok hafif kurumsal gri yaparak beyaz kartların öne çıkmasını sağlama */
-    .stApp {
-        background-color: #f4f6f9;
-    }
-    
-    /* Üst menü ve footer gizleme (daha temiz, app benzeri görünüm) */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+/* Ana Başlık (Canlı ve Gradient Mavi Ton) */
+.main-title {
+    text-align: center;
+    background: -webkit-linear-gradient(45deg, #1A5276, #5DADE2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+    font-size: 2.8em;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
 
-    /* Sekme (Tab) menüsünü modernize etme */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        padding-bottom: 10px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #ffffff;
-        border-radius: 6px 6px 0px 0px;
-        border: 1px solid #e0e6ed;
-        border-bottom: none;
-        padding: 10px 24px;
-        color: #64748b;
-        font-weight: 600;
-        box-shadow: 0px -2px 5px rgba(0,0,0,0.02);
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #6fa8dc;
-        color: #ffffff !important;
-        border-color: #6fa8dc;
-    }
+/* Metrik Kutuları (Skorlar ve Farklar İçin Belirgin Yapı) */
+div[data-testid="stMetric"] {
+    background-color: #f0f7ff;
+    border: 1px solid #cce3ff;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out;
+}
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+}
+div[data-testid="stMetric"] label {
+    color: #00509e !important;
+    font-weight: 700;
+    font-size: 1.1em;
+}
 
-    /* Metrik (Skor) kartlarını gölgeli ve şık hale getirme */
-    div[data-testid="metric-container"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    div[data-testid="metric-container"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
+/* Sekme (Tab) Başlıklarını Daha Belirgin Mavi Yapma */
+.stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2874A6;
+}
 
-    /* Butonları daha premium gösterme */
-    .stButton>button {
-        border-radius: 8px;
-        font-weight: 600;
-        border: 1px solid #cbd5e1;
-        background-color: #ffffff;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
-        border-color: #6fa8dc;
-        color: #6fa8dc;
-    }
-
-    /* Primary buton özel stili */
-    .stButton>button[data-baseweb="button"]:has(div) {
-        /* Streamlit'in varsayılan primary butonuna dokunmuyoruz, genel efekti veriyoruz */
-    }
-
-    /* Expander (Açılır kutular) stili */
-    .streamlit-expanderHeader {
-        background-color: #ffffff;
-        border-radius: 8px;
-        font-weight: 600;
-        border: 1px solid #e2e8f0;
-    }
-    
-    /* Sidebar stili */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
-        box-shadow: 2px 0px 10px rgba(0,0,0,0.03);
-    }
+/* Genişletilebilir Paneller (Expander) */
+div[data-testid="stExpander"] {
+    border: 1px solid #b3d4ff;
+    border-radius: 8px;
+    background-color: #fafcff;
+}
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
 
 # ============================================================
 # ============================================================
@@ -260,9 +226,9 @@ with col2:
         pass 
 
 if lang == "tr":
-    st.markdown("<h2 style='text-align: center; color: #6fa8dc; font-weight: bold;'>GII 2025 Tahmin ve Karar Destek Sistemi</h2>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>GII 2025 Tahmin ve Karar Destek Sistemi</h1>", unsafe_allow_html=True)
 else:
-    st.markdown("<h2 style='text-align: center; color: #6fa8dc; font-weight: bold;'>GII 2025 Forecast & Decision Support System</h2>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>GII 2025 Forecast & Decision Support System</h1>", unsafe_allow_html=True)
 
 with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "About Methodology"):
     if lang == "tr":
