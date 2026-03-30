@@ -11,16 +11,16 @@ import math
 import shap
 import io
 import tempfile 
-from fpdf import FPDF # terminalde: pip install fpdf2
+from fpdf import FPDF # terminal: pip install fpdf2
 
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
 # ============================================================
-# PROFESYONEL TEMA VE ARAYÜZ CSS ENJEKSİYONU
+# PROFESSIONAL THEME AND UI CSS INJECTION
 # ============================================================
 custom_css = """
 <style>
-/* Ana Başlık (Canlı ve Gradient Mavi Ton) */
+/* Main Title (Vibrant and Gradient Blue Tone) */
 .main-title {
     text-align: center;
     background: -webkit-linear-gradient(45deg, #1A5276, #5DADE2);
@@ -32,7 +32,7 @@ custom_css = """
     letter-spacing: 1px;
 }
 
-/* Metrik Kutuları (Skorlar ve Farklar İçin Belirgin Yapı) */
+/* Metric Boxes (Distinct Structure for Scores and Differences) */
 div[data-testid="stMetric"] {
     background-color: #f0f7ff;
     border: 1px solid #cce3ff;
@@ -51,14 +51,14 @@ div[data-testid="stMetric"] label {
     font-size: 1.1em;
 }
 
-/* Sekme (Tab) Başlıklarını Daha Belirgin Mavi Yapma */
+/* Make Tab Titles a More Distinctive Blue */
 .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
     font-size: 16px;
     font-weight: 600;
     color: #2874A6;
 }
 
-/* Genişletilebilir Paneller (Expander) */
+/* Expandable Panels (Expander) */
 div[data-testid="stExpander"] {
     border: 1px solid #b3d4ff;
     border-radius: 8px;
@@ -70,33 +70,32 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # ============================================================
 # ============================================================
-# PDF OLUŞTURMA YARDIMCI FONKSİYONU (KESİN ÇÖZÜM)
+# PDF GENERATION HELPER FUNCTION
 # ============================================================
 def generate_pdf_report(title, text_content="", fig=None):
-    """Metin ve grafikleri alıp PDF byte verisine çeviren yardımcı fonksiyon."""
-    # Türkçe karakterleri standart İngilizce karakterlere dönüştüren harita
+    """Helper function to convert text and graphics to PDF byte data."""
+    # Map for converting Turkish characters to standard English characters
     tr_map = str.maketrans("ğüşiöçĞÜŞİÖÇıI", "gusiocGUSIOCiI")
     
     pdf = FPDF()
     pdf.add_page()
     
-    # Başlık
+    # Title
     pdf.set_font("Helvetica", 'B', 16)
     safe_title = str(title).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
     pdf.cell(0, 10, txt=safe_title, ln=True, align='C')
     pdf.ln(8)
     
-    # Metin
+    # Text
     if text_content:
         pdf.set_font("Helvetica", size=11)
         safe_text = str(text_content).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
         
-        # multi_cell yerine doğrudan write kullanıyoruz.
-        # write fonksiyonu metni akıtır, uzun kelimelerde veya boşluklarda çökmez.
+        # Using write directly instead of multi_cell to prevent crashes on long words or spaces.
         pdf.write(h=8, txt=safe_text)
-        pdf.ln(10) # Metin bitince grafikle arasına boşluk bırak
+        pdf.ln(10) # Leave space between text and graphic
         
-    # Grafik
+    # Graphic
     if fig:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
             fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
@@ -105,7 +104,7 @@ def generate_pdf_report(title, text_content="", fig=None):
     return bytes(pdf.output())
 
 # ============================================================
-# 1. DOSYA YOLLARI VE YÜKLEME 
+# 1. FILE PATHS AND LOADING 
 # ============================================================
 @st.cache_resource(show_spinner="Dosyalar yükleniyor... / Loading files...")
 def load_system_files():
@@ -126,7 +125,7 @@ def load_system_files():
 df_raw, df_proc, scaler, scaler_cols, cost_cols, model, model_features = load_system_files()
 
 # ============================================================
-# 2. İSİM EŞLEŞTİRMELERİ & VERİ HAZIRLIĞI
+# 2. NAME MAPPINGS & DATA PREPARATION
 # ============================================================
 def sanitize_name(name):
     return re.sub(r"[^A-Za-z0-9_]", "", name)
@@ -155,7 +154,7 @@ for feat in model_features:
 
 reverse_feature_map = {v: k for k, v in feature_map.items()}
 
-# Trend özellikleri hazırlığı
+# Trend features preparation
 trend_candidates = [c for c in df_raw.columns if c != country_col and c != year_col]
 gii_col_exact = [c for c in df_raw.columns if "global innovation index" in c.lower()]
 if gii_col_exact and gii_col_exact[0] in trend_candidates:
@@ -164,7 +163,7 @@ trend_features_tr = ["GII Skoru (Gerçekleşen)"] + trend_candidates
 trend_features_en = ["GII Score (Actual)"] + trend_candidates
 
 # ============================================================
-# 3. CORE HESAPLAMA MANTIĞI
+# 3. CORE CALCULATION LOGIC
 # ============================================================
 def get_raw_values(country_name):
     if country_name not in latest_data_raw.index: return [0.0] * len(ui_input_names)
@@ -172,7 +171,7 @@ def get_raw_values(country_name):
     return [float(row.get(col, 0.0) if not pd.isna(row.get(col, 0.0)) else 0.0) for col in ui_input_names]
 
 def calculate_score_engine(country_name, raw_inputs_list):
-    """Analizler için ortak hesaplama motoru"""
+    """Common calculation engine for analysis"""
     try:
         row_raw = latest_data_raw.loc[country_name]
         row_proc = latest_data_proc.loc[country_name]
@@ -211,13 +210,13 @@ def get_actual_gii(country, lang):
     return actual_val_str
 
 # ============================================================
-# 4. STREAMLIT ARAYÜZÜ
+# 4. STREAMLIT INTERFACE
 # ============================================================
 
 lang_choice = st.sidebar.radio("Language / Dil", ["🇹🇷 Türkçe", "🇬🇧 English"])
 lang = "tr" if "Türkçe" in lang_choice else "en"
 
-# Logo ve Başlık
+# Logo and Title
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
     try:
@@ -250,7 +249,7 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
         
-# --- SEKMELER (SIRA GÜNCELLENDİ: 1 ve 5 YER DEĞİŞTİRDİ) ---
+# --- TABS (ORDER UPDATED: 1 and 5 SWAPPED) ---
 t1, t2, t3, t4, t5 = st.tabs([
     "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi"
 ] if lang=="tr" else [
@@ -258,7 +257,7 @@ t1, t2, t3, t4, t5 = st.tabs([
 ])
 
 # ============================================================
-# SEKME 1: SENARYO SİMÜLATÖRÜ (ESKİ SEKME 5)
+# TAB 1: SCENARIO SIMULATOR (FORMER TAB 5)
 # ============================================================
 with t1:
     st.markdown("### " + ("GII 2025 Senaryo Simülatörü" if lang=="tr" else "GII 2025 Scenario Simulator"))
@@ -271,48 +270,48 @@ with t1:
         "how the 2025 forecast score is affected by changing these values in real-time."
     ))
 
-    # Ülke Seçimi
+    # Country Selection
     sim_country = st.selectbox("Simülasyon İçin Ülke Seç / Select Country", country_list, key="sim_country_box")
     
-    # Seçilen ülkenin 2023 ham verilerini çek
+    # Fetch 2023 raw data for the selected country
     base_raw_values = get_raw_values(sim_country)
     
-    # Başlangıç (Orijinal) 2025 Tahmini
+    # Initial (Original) 2025 Forecast
     base_pred, _ = calculate_score_engine(sim_country, base_raw_values)
     
     st.divider()
     
-    # Sol kolon: Değişken girişleri | Sağ kolon: Sonuç metrikleri
+    # Left column: Variable inputs | Right column: Result metrics
     col_input, col_res = st.columns([2, 1])
     
     new_sim_values = []
     
     with col_input:
         st.subheader("📝 " + ("Değişken Ham Değerleri" if lang=="tr" else "Raw Variable Values"))
-        # Değişkenleri 2 alt kolona bölerek daha derli toplu gösterelim
+        # Split variables into 2 sub-columns for a cleaner look
         sub_c1, sub_c2 = st.columns(2)
         
         for i, feat_name in enumerate(ui_input_names):
             current_val = float(base_raw_values[i])
             target_sub_col = sub_c1 if i % 2 == 0 else sub_c2
             
-            # Kullanıcıya ham değerleri değiştirme imkanı tanıyan input
+            # Input allowing user to change raw values
             u_val = target_sub_col.number_input(
                 label=f"{feat_name}",
                 value=current_val,
                 format="%.3f",
-                key=f"input_{sim_country}_{i}" # Ülke değiştikçe key değişmeli
+                key=f"input_{sim_country}_{i}" # Key must change as country changes
             )
             new_sim_values.append(u_val)
 
     with col_res:
         st.subheader("🎯 " + ("Simülasyon Çıktısı" if lang=="tr" else "Simulation Output"))
         
-        # Yeni değerlerle anlık hesaplama
+        # Real-time calculation with new values
         sim_pred, _ = calculate_score_engine(sim_country, new_sim_values)
         diff = sim_pred - base_pred
         
-        # Skor Kartı
+        # Score Card
         st.metric(
             label=f"{TARGET_YEAR} " + ("Simüle Edilen Skor" if lang=="tr" else "Simulated Score"),
             value=f"{sim_pred:.2f}",
@@ -323,7 +322,7 @@ with t1:
         st.write(f"**{sim_country} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
         st.success(f"**{base_pred:.2f}**")
         
-        # Özet Analiz
+        # Summary Analysis
         if abs(diff) > 0.01:
             direction = "artış" if diff > 0 else "düşüş"
             if lang == "en": direction = "increase" if diff > 0 else "decrease"
@@ -334,15 +333,15 @@ with t1:
             ))
         
         if st.button("Değerleri Sıfırla / Reset Values" if lang=="tr" else "Reset Values"):
-            # Mevcut simülasyon ülkesine ait tüm input key'lerini temizle
+            # Clear all input keys for the current simulation country
             for key in list(st.session_state.keys()):
                 if key.startswith(f"input_{sim_country}_"):
                     del st.session_state[key]
             
-            # Sayfayı yenile
+            # Refresh page
             st.rerun()
 
-    # Alt kısma küçük bir karşılaştırma tablosu
+    # Small comparison table at the bottom
     with st.expander("Değişim Detaylarını Gör / See Change Details"):
         comparison_df = pd.DataFrame({
             "Değişken / Variable": ui_input_names,
@@ -353,7 +352,7 @@ with t1:
         changed_df = comparison_df[comparison_df["Fark / Diff"] != 0]
         st.table(changed_df)
         
-        # PDF İNDİRME BUTONU
+        # PDF DOWNLOAD BUTTON
         pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
         pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
         
@@ -373,7 +372,7 @@ with t1:
         )
 
 
-# SEKME 2: KARŞILAŞTIRMALI ANALİZ
+# TAB 2: COMPARATIVE ANALYSIS
 with t2:
     st.markdown("### " + ("Standardize Edilmiş Performans Matrisi (Z-Skor)" if lang=="tr" else "Standardized Performance Matrix (Z-Score)"))
     
@@ -409,7 +408,7 @@ with t2:
         plt.tight_layout()
         st.pyplot(fig)
         
-        # PDF İNDİRME BUTONU
+        # PDF DOWNLOAD BUTTON
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
         pdf_text = f"{c1} (Tahmin/Forecast: {s1:.2f}) VS {c2} (Tahmin/Forecast: {s2:.2f})"
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
@@ -422,7 +421,7 @@ with t2:
         )
 
 
-# SEKME 3: HEDEF VE SHAP
+# TAB 3: TARGET AND SHAP
 with t3:
     st.markdown("### " + ("Model Açıklanabilirliği (XAI) ve Stratejik Hedef Takibi" if lang=="tr" else "Model Explainability (XAI) and Strategic Target Tracking"))
     
@@ -470,7 +469,7 @@ with t3:
             plt.tight_layout()
             st.pyplot(fig_shap)
             
-        # PDF İNDİRME BUTONU
+        # PDF DOWNLOAD BUTTON
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
         pdf_text = (target_text + "\n" + shap_text).replace("**", "")
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_shap)
@@ -483,7 +482,7 @@ with t3:
         )
 
 
-# SEKME 4: TREND ANALİZİ
+# TAB 4: TREND ANALYSIS
 with t4:
     st.markdown("### " + ("5 Yıllık Trend Analizi" if lang=="tr" else "5-Year Trend Analysis"))
     d5_c, f5_c = st.columns(2)
@@ -505,7 +504,7 @@ with t4:
             ax.set_title(f"{d5} - {feat_dropdown}")
             st.pyplot(fig_trend)
             
-            # PDF İNDİRME BUTONU
+            # PDF DOWNLOAD BUTTON
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
             pdf_text = f"Ulke/Country: {d5}\nIncelenen Degisken/Variable: {feat_dropdown}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
@@ -521,7 +520,7 @@ with t4:
 
 
 # ============================================================
-# SEKME 5: DUYARLILIK ANALİZİ (ESKİ SEKME 1)
+# TAB 5: SENSITIVITY ANALYSIS (FORMER TAB 1)
 # ============================================================
 with t5:
     st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
@@ -566,7 +565,7 @@ with t5:
         
         st.markdown(report)
         
-        # PDF İNDİRME BUTONU
+        # PDF DOWNLOAD BUTTON
         clean_report = report.replace("**", "") 
         pdf_bytes = generate_pdf_report("Duyarlilik Analizi Raporu" if lang=="tr" else "Sensitivity Analysis Report", clean_report)
         st.download_button(
