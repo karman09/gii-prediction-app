@@ -6,4 +6,4 @@ matplotlib
 openpyxl
 shap
 lightgbm
-pip install fpdf2
+fpdf2
