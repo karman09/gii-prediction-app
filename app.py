@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np 
 import joblib
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 import re
 import math
 import shap
@@ -236,8 +236,8 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
         
         **2. Geliştirilen Yapay Zeka Modeli:** Bu sistem, 78 değişkenin tamamını manuel hesaplamak yerine, **tahminsel (predictive)** bir yaklaşım sunar:
-        * **Kritik Değişken Seçimi:** Model, 78 gösterge arasından GII skorunu en çok etkileyen **"22 Kritik Belirleyici"** tespit etmiştir.
-        * **Doğrusal Olmayan Öğrenme:** Model seçilen **22 değişken** arasındaki karmaşık ilişkileri öğrenerek sonuç üretir.
+        * **Kritik Değişken Seçimi:** Model, 78 gösterge arasından GII skorunu en çok etkileyen **"24 Kritik Belirleyici"** tespit etmiştir.
+        * **Doğrusal Olmayan Öğrenme:** Model seçilen **24 değişken** arasındaki karmaşık ilişkileri öğrenerek sonuç üretir.
         * **SHAP (XAI):** Tahminlerin nedenini açıklayan "Açıklanabilir Yapay Zeka" teknolojisi entegre edilmiştir.
         """)
     else:
@@ -245,8 +245,8 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         **1. Classical GII Calculation (WIPO Methodology):** The GII is calculated by taking the weighted average of exactly **78 indicators** grouped under **7 main pillars**.
         
         **2. Developed AI Model:** Instead of manual calculation, this system offers a **predictive** approach:
-        * **Critical Variable Selection:** The model identified **"22 Critical Determinants"** that most impact the score.
-        * **Non-linear Learning:** The model produces results by learning complex relationships between the selected **22 variables**.
+        * **Critical Variable Selection:** The model identified **"24 Critical Determinants"** that most impact the score.
+        * **Non-linear Learning:** The model produces results by learning complex relationships between the selected **24 variables**.
         * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
         
@@ -264,11 +264,11 @@ with t1:
     st.markdown("### " + ("GII 2025 Senaryo Simülatörü" if lang=="tr" else "GII 2025 Scenario Simulator"))
     
     st.info("💡 " + (
-        "Bu bölümde, seçilen ülkenin 2023 ham verilerini (baz değerler) görebilir ve bu değerleri değiştirerek "
-        "2025 tahmin skorunun nasıl etkilendiğini anlık olarak simüle edebilirsiniz."
+        "Bu modül üzerinden ilgili ülkenin 2023 ham değerlerini inceleyebilir, "
+        "parametrelerde yapacağınız değişikliklerin 2025 öngörü skoruna etkisini eşzamanlı olarak analiz edebilirsiniz."
         if lang=="tr" else 
-        "In this section, you can view the 2023 raw data (baseline) for the selected country and simulate "
-        "how the 2025 forecast score is affected by changing these values in real-time."
+        "In this module, you can review the selected country's 2023 raw values and analyze in real-time "
+        "how modifying these parameters affects the predicted 2025 score."
     ))
 
     # Country Selection
@@ -375,12 +375,12 @@ with t1:
 
 # TAB 2: COMPARATIVE ANALYSIS
 with t2:
-    st.markdown("### " + ("Standardize Edilmiş Performans Matrisi (Z-Skor)" if lang=="tr" else "Standardized Performance Matrix (Z-Score)"))
+    st.markdown("### " + ("Karşılaştırmalı Performans Profili (Z-Skor)" if lang=="tr" else "Comparative Performance Profile (Z-Score)"))
     
     if lang == "tr":
-        st.info("💡 **Bu modül**, iki farklı ülkenin kritik göstergelerdeki performansını standartlaştırılmış Z-skorları üzerinden görselleştirerek doğrudan kıyaslamanızı sağlar.")
+        st.info("💡 **Bu modül**, modelde yer alan 24 performans göstergesi üzerinden iki ülkenin performansını standart Z-skorlarıyla görselleştirerek kıyaslama yapmanıza olanak tanır. ")
     else:
-        st.info("💡 **This module** allows you to benchmark the performance of two different countries across critical indicators by visualizing their standardized Z-scores.")
+        st.info("💡 **This module** allows you to compare the performance of two countries across the 24 indicators used in the model by visualizing them through standard Z-scores. ")
 
     c1_col, c2_col = st.columns(2)
     with c1_col: c1 = st.selectbox("Ülke A / Country A", country_list, key="bench_c1")
@@ -426,7 +426,7 @@ with t2:
 with t3:
     st.markdown("### " + ("Model Açıklanabilirliği (XAI) ve Stratejik Hedef Takibi" if lang=="tr" else "Model Explainability (XAI) and Strategic Target Tracking"))
     
-    st.info("💡 " + ("Bu modül, hedef skor ile tahmin arasındaki farkı hesaplar ve SHAP grafikleriyle en güçlü yönleri ve gelişim alanlarını listeler." if lang=="tr" else "This module calculates the gap between target and forecast, listing strengths and improvement areas via SHAP."))
+    st.info("💡 " + ("Bu modül, hedef skor ile mevcut tahmin arasındaki farkı analiz eder; SHAP grafikleri yardımıyla modele etki eden en güçlü yönleri ve iyileştirmeye açık gelişim alanlarını listeler." if lang=="tr" else "This module analyzes the difference between the target score and the current prediction; using SHAP plots, it highlights the strongest driving factors and areas for improvement."))
 
     shap_c, target_c = st.columns([2,1])
     with shap_c: d4 = st.selectbox("Ülke Seç / Select Country", country_list, key="shap_c")
@@ -482,10 +482,19 @@ with t3:
             key="dl_t3"
         )
 
-
 # TAB 4: TREND ANALYSIS
 with t4:
     st.markdown("### " + ("5 Yıllık Trend Analizi" if lang=="tr" else "5-Year Trend Analysis"))
+    
+    # --- (INFO BOX) ---
+    info_text = (
+        "Bu modül, seçtiğiniz ülkenin ve belirlediğiniz göstergenin son 5 yıldaki gelişim seyrini görselleştirerek tarihsel performans eğilimlerini analiz etmenize olanak tanır." 
+        if lang == "tr" else 
+        "This module allows you to analyze historical performance trends by visualizing the 5-year trajectory of the selected country and indicator."
+    )
+    st.info(info_text, icon="💡")
+    # ------------------------------------------
+
     d5_c, f5_c = st.columns(2)
     with d5_c: d5 = st.selectbox("Ülke Seç / Select Country", country_list, key="trend_c")
     with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken / Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
@@ -500,9 +509,18 @@ with t4:
         
         if actual_col and actual_col in country_data.columns:
             x, y = country_data[year_col].astype(int).tolist(), country_data[actual_col].tolist()
-            fig_trend, ax = plt.subplots(figsize=(9, 5))
+            
+            # --- GRAFİK GÜNCELLEMELERİ BURADA ---
+            # Grafiği daha küçük ve orantılı hale getirdik:
+            fig_trend, ax = plt.subplots(figsize=(7, 4)) 
+            
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
+            
+            # Alt eksende (X) sadece tam sayı olan yılları gösteriyoruz (2021.5 gibi aralıkları gizler):
+            ax.set_xticks(x) 
+            # ------------------------------------
+            
             st.pyplot(fig_trend)
             
             # Generate and provide PDF download option
@@ -517,19 +535,20 @@ with t4:
                 key="dl_t4"
             )
         else:
-            st.error("Veri bulunamadı.")
+            # 
+            st.error("Veri bulunamadı." if lang == "tr" else "Data not found.")
 
-
+# ============================================================
 # ============================================================
 # TAB 5: SENSITIVITY ANALYSIS
 # ============================================================
 with t5:
-    st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
+    st.markdown("### " + (f"Senaryo Bazlı Duyarlılık Analizi ({INPUT_YEAR})" if lang=="tr" else f"Scenario-Based Sensitivity Analysis ({INPUT_YEAR})"))
     
     if lang == "tr":
-        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk varsayımsal bir iyileşmenin veya kötüleşmenin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
+        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk pozitif veya negatif yönlü varsayımsal bir değişimin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
     else:
-        st.info("💡 **This module** automatically identifies priority intervention areas for policymakers by measuring the impact of a hypothetical 10% improvement or deterioration in current variables on the overall score.")
+        st.info("💡 **This module** automatically measures the impact of a hypothetical 10% positive or negative change in current variables on the overall score, identifying priority intervention areas for policymakers.")
 
     adv_country = st.selectbox("Ülke Seç / Select Country", country_list, key="adv_country")
     
@@ -577,17 +596,17 @@ with t5:
             key="dl_t5_new"
         )
 
-
+# ============================================================
 # ============================================================
 # ============================================================
 # TAB 6: GLOBAL LEADERBOARD & MAP
 # ============================================================
 with t6:
-    st.markdown("### " + ("Küresel Sıralama ve Harita" if lang=="tr" else "Global Leaderboard & Map"))
+    st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
     st.info("💡 " + (
-        "Tüm ülkelerin 2025 tahmin skorlarını ve gerçekleşen değerlerini harita üzerinde görselleştirebilir ve performanslarını tek bir tabloda inceleyebilirsiniz." 
+        "Bu modül, ülkelerin 2025 öngörü skorlarını ve mevcut performans metriklerini dünya haritası üzerinde görselleştirerek, küresel ölçekte kapsamlı bir karşılaştırma yapmanıza olanak tanır." 
         if lang=="tr" else 
-        "You can visualize the 2025 forecast scores and actual values of all countries on the map and examine their performance in a single table."
+        "This module allows for a comprehensive global comparison by spatially visualizing the 2025 forecast scores and current performance metrics of countries on a world map."
     ))
     
     if st.button("Harita ve Sıralamayı Yükle / Load Map & Leaderboard", key="load_map_btn"):
@@ -639,7 +658,8 @@ with t6:
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
-                st.write("**Sıralama Tablosu / Leaderboard**" if lang=="tr" else "**Leaderboard**")
+                # Tablo üst yazısını analitik dile uygun güncelledik
+                st.write("**Performans Sıralaması / Performance Ranking**" if lang=="tr" else "**Performance Ranking**")
                 # Retain original names in the table by dropping the mapping column
                 st.dataframe(
                     df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
@@ -647,7 +667,8 @@ with t6:
                 )
             
             with col_m2:
-                st.write("**Küresel Harita / Global Map**" if lang=="tr" else "**Global Map**")
+                # Harita üst yazısını analitik dile uygun güncelledik
+                st.write("**Mekansal Dağılım Haritası / Spatial Distribution Map**" if lang=="tr" else "**Spatial Distribution Map**")
                 
                 fig_map = px.choropleth(
                     df_map, 
@@ -683,9 +704,9 @@ with t6:
 with t7:
     st.markdown("### " + ("Veri Keşfi ve Korelasyon" if lang=="tr" else "Data Explorer & Correlation"))
     st.info("💡 " + (
-        "Modelde kullanılan temel değişkenler arasındaki ilişkileri ve ülkelerin ham verilerini buradan inceleyebilirsiniz." 
+        "Bu modül, modele temel oluşturan ham veri setini detaylı olarak incelemenize ve kritik değişkenler arasındaki korelasyonu keşfetmenize olanak tanır." 
         if lang=="tr" else 
-        "You can explore the relationships between the base variables used in the model and the raw data of the countries here."
+        "This module allows you to examine the underlying raw dataset in detail and discover the correlations between critical variables."
     ))
     
     st.write("**Ham Veri Tablosu / Raw Data Table**" if lang=="tr" else "**Raw Data Table**")
