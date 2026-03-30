@@ -9,8 +9,44 @@ import matplotlib.pyplot as plt
 import re
 import math
 import shap
+import io
+import tempfile
+from fpdf import FPDF # terminalde: pip install fpdf2
 
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
+
+# ============================================================
+# PDF OLUŞTURMA YARDIMCI FONKSİYONU (YENİ EKLENDİ)
+# ============================================================
+def generate_pdf_report(title, text_content="", fig=None):
+    """Metin ve grafikleri alıp PDF byte verisine çeviren yardımcı fonksiyon."""
+    # Türkçe karakterlerin standart FPDF fontunda hata vermemesi için dönüştürme
+    tr_map = str.maketrans("ğüşiöçĞÜŞİÖÇI", "gusıocGUSIOCI")
+    
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Başlık
+    pdf.set_font("Helvetica", 'B', 16)
+    safe_title = str(title).translate(tr_map)
+    pdf.cell(0, 10, txt=safe_title, ln=True, align='C')
+    pdf.ln(10)
+    
+    # Metin
+    if text_content:
+        pdf.set_font("Helvetica", size=11)
+        safe_text = str(text_content).translate(tr_map)
+        for line in safe_text.split('\n'):
+            pdf.multi_cell(0, 8, txt=line)
+        pdf.ln(5)
+        
+    # Grafik
+    if fig:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+            fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+            pdf.image(tmpfile.name, w=170)
+            
+    return bytes(pdf.output())
 
 # ============================================================
 # 1. DOSYA YOLLARI VE YÜKLEME 
@@ -164,6 +200,7 @@ t1, t2, t3, t4, t5 = st.tabs([
 ] if lang=="tr" else [
     "Sensitivity Analysis", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Scenario Simulator"
 ])
+
 # SEKME 1: DUYARLILIK ANALİZİ
 with t1:
     st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
@@ -205,7 +242,19 @@ with t1:
             else:
                 report += f"**PRIORITY AREAS FOR {TARGET_YEAR} SCORE:**\n\n"
                 for item in impacts[:5]: report += f"- **[{item['Feat']}]** -> 10% {item['Act']}\n  - New Value: {item['Val']:.2f} | Expected Gain: **+{item['Gain']:.3f} points**\n"
+        
         st.markdown(report)
+        
+        # PDF İNDİRME BUTONU (YENİ EKLENDİ)
+        clean_report = report.replace("**", "") # PDF'te markdown yıldızlarını temizliyoruz
+        pdf_bytes = generate_pdf_report("Duyarlilik Analizi Raporu" if lang=="tr" else "Sensitivity Analysis Report", clean_report)
+        st.download_button(
+            label="📥 PDF Olarak İndir / Download PDF",
+            data=pdf_bytes,
+            file_name=f"Duyarlilik_Analizi_{adv_country}.pdf",
+            mime="application/pdf",
+            key="dl_t1"
+        )
 
 # SEKME 2: KARŞILAŞTIRMALI ANALİZ
 with t2:
@@ -242,6 +291,18 @@ with t2:
         ax.axvline(0, color='black', linewidth=1, linestyle='--')
         plt.tight_layout()
         st.pyplot(fig)
+        
+        # PDF İNDİRME BUTONU (YENİ EKLENDİ)
+        pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
+        pdf_text = f"{c1} (Tahmin/Forecast: {s1:.2f}) VS {c2} (Tahmin/Forecast: {s2:.2f})"
+        pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
+        st.download_button(
+            label="📥 PDF Olarak İndir / Download PDF",
+            data=pdf_bytes,
+            file_name=f"Karsilastirma_{c1}_{c2}.pdf",
+            mime="application/pdf",
+            key="dl_t2"
+        )
 
 # SEKME 3: HEDEF VE SHAP
 with t3:
@@ -286,10 +347,22 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            fig = plt.figure(figsize=(9, 6))
+            fig_shap = plt.figure(figsize=(9, 6))
             shap.plots.waterfall(shap_values[0], max_display=10, show=False)
             plt.tight_layout()
-            st.pyplot(plt.gcf())
+            st.pyplot(fig_shap)
+            
+        # PDF İNDİRME BUTONU (YENİ EKLENDİ)
+        pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
+        pdf_text = (target_text + "\n" + shap_text).replace("**", "")
+        pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_shap)
+        st.download_button(
+            label="📥 PDF Olarak İndir / Download PDF",
+            data=pdf_bytes,
+            file_name=f"SHAP_Analizi_{d4}.pdf",
+            mime="application/pdf",
+            key="dl_t3"
+        )
 
 # SEKME 4: TREND ANALİZİ
 with t4:
@@ -308,13 +381,26 @@ with t4:
         
         if actual_col and actual_col in country_data.columns:
             x, y = country_data[year_col].astype(int).tolist(), country_data[actual_col].tolist()
-            fig, ax = plt.subplots(figsize=(9, 5))
+            fig_trend, ax = plt.subplots(figsize=(9, 5))
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
-            st.pyplot(fig)
+            st.pyplot(fig_trend)
+            
+            # PDF İNDİRME BUTONU (YENİ EKLENDİ)
+            pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
+            pdf_text = f"Ulke/Country: {d5}\nIncelenen Degisken/Variable: {feat_dropdown}"
+            pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
+            st.download_button(
+                label="📥 PDF Olarak İndir / Download PDF",
+                data=pdf_bytes,
+                file_name=f"Trend_Analizi_{d5}.pdf",
+                mime="application/pdf",
+                key="dl_t4"
+            )
         else:
             st.error("Veri bulunamadı.")
-    # ============================================================
+
+# ============================================================
 # SEKME 5: SENARYO SİMÜLATÖRÜ (WHAT-IF ANALYSIS)
 # ============================================================
 with t5:
@@ -407,7 +493,28 @@ with t5:
             "Simülasyon (Raw)": new_sim_values
         })
         comparison_df["Fark / Diff"] = comparison_df["Simülasyon (Raw)"] - comparison_df["2023 Baz (Raw)"]
-        st.table(comparison_df[comparison_df["Fark / Diff"] != 0])
+        changed_df = comparison_df[comparison_df["Fark / Diff"] != 0]
+        st.table(changed_df)
+        
+        # PDF İNDİRME BUTONU (YENİ EKLENDİ)
+        # Senaryo sonuçlarını dinamik olarak PDF metnine dökelim
+        pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
+        pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
+        
+        if not changed_df.empty:
+            for index, row in changed_df.iterrows():
+                pdf_text += f"{row['Değişken / Variable']}: {row['2023 Baz (Raw)']:.2f} -> {row['Simülasyon (Raw)']:.2f} (Fark: {row['Fark / Diff']:.2f})\n"
+        else:
+            pdf_text += "Herhangi bir degisiklik yapilmamistir."
+
+        pdf_bytes = generate_pdf_report(pdf_title, pdf_text)
+        st.download_button(
+            label="📥 Senaryo Raporunu PDF Olarak İndir / Download Scenario PDF",
+            data=pdf_bytes,
+            file_name=f"Senaryo_{sim_country}.pdf",
+            mime="application/pdf",
+            key="dl_t5"
+        )
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: gray;'>{TARGET_YEAR} Strategic Decision Support System</p>", unsafe_allow_html=True)
