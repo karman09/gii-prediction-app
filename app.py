@@ -11,8 +11,8 @@ import math
 import shap
 import io
 import tempfile 
-from fpdf import FPDF # terminal: pip install fpdf2
-import plotly.express as px # YENİ EKLENEN: Harita ve ısı haritası için (terminal: pip install plotly)
+from fpdf import FPDF # Requirement: pip install fpdf2
+import plotly.express as px # Requirement: pip install plotly (Utilized for maps and heatmaps)
 
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
@@ -75,28 +75,28 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # ============================================================
 def generate_pdf_report(title, text_content="", fig=None):
     """Helper function to convert text and graphics to PDF byte data."""
-    # Map for converting Turkish characters to standard English characters
+    # Mapping for converting Turkish characters to standard English characters
     tr_map = str.maketrans("ğüşiöçĞÜŞİÖÇıI", "gusiocGUSIOCiI")
     
     pdf = FPDF()
     pdf.add_page()
     
-    # Title
+    # Document Title
     pdf.set_font("Helvetica", 'B', 16)
     safe_title = str(title).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
     pdf.cell(0, 10, txt=safe_title, ln=True, align='C')
     pdf.ln(8)
     
-    # Text
+    # Document Text
     if text_content:
         pdf.set_font("Helvetica", size=11)
         safe_text = str(text_content).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
         
-        # Using write directly instead of multi_cell to prevent crashes on long words or spaces.
+        # Utilizing write directly instead of multi_cell to prevent formatting crashes on long strings.
         pdf.write(h=8, txt=safe_text)
-        pdf.ln(10) # Leave space between text and graphic
+        pdf.ln(10) # Formatting margin between text and graphic
         
-    # Graphic
+    # Graphic/Image
     if fig:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
             fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
@@ -217,7 +217,7 @@ def get_actual_gii(country, lang):
 lang_choice = st.sidebar.radio("Language / Dil", ["🇹🇷 Türkçe", "🇬🇧 English"])
 lang = "tr" if "Türkçe" in lang_choice else "en"
 
-# Logo and Title
+# Logo and Title Integration
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
     try:
@@ -250,7 +250,7 @@ with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "
         * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
         """)
         
-# --- TABS (ORDER UPDATED & NEW TABS ADDED) ---
+# --- UI TABS CONFIGURATION ---
 t1, t2, t3, t4, t5, t6, t7 = st.tabs([
     "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi", "Küresel Sıralama ve Harita", "Veri Keşfi ve Korelasyon"
 ] if lang=="tr" else [
@@ -258,7 +258,7 @@ t1, t2, t3, t4, t5, t6, t7 = st.tabs([
 ])
 
 # ============================================================
-# TAB 1: SCENARIO SIMULATOR (FORMER TAB 5)
+# TAB 1: SCENARIO SIMULATOR
 # ============================================================
 with t1:
     st.markdown("### " + ("GII 2025 Senaryo Simülatörü" if lang=="tr" else "GII 2025 Scenario Simulator"))
@@ -274,10 +274,10 @@ with t1:
     # Country Selection
     sim_country = st.selectbox("Simülasyon İçin Ülke Seç / Select Country", country_list, key="sim_country_box")
     
-    # Fetch 2023 raw data for the selected country
+    # Retrieve 2023 raw data for the selected country
     base_raw_values = get_raw_values(sim_country)
     
-    # Initial (Original) 2025 Forecast
+    # Initial 2025 Forecast Base Calculation
     base_pred, _ = calculate_score_engine(sim_country, base_raw_values)
     
     st.divider()
@@ -289,30 +289,30 @@ with t1:
     
     with col_input:
         st.subheader("📝 " + ("Değişken Ham Değerleri" if lang=="tr" else "Raw Variable Values"))
-        # Split variables into 2 sub-columns for a cleaner look
+        # Distribute variables across 2 sub-columns for optimal UI structure
         sub_c1, sub_c2 = st.columns(2)
         
         for i, feat_name in enumerate(ui_input_names):
             current_val = float(base_raw_values[i])
             target_sub_col = sub_c1 if i % 2 == 0 else sub_c2
             
-            # Input allowing user to change raw values
+            # Interactive numerical input for simulating raw variable changes
             u_val = target_sub_col.number_input(
                 label=f"{feat_name}",
                 value=current_val,
                 format="%.3f",
-                key=f"input_{sim_country}_{i}" # Key must change as country changes
+                key=f"input_{sim_country}_{i}" # Unique widget key requirement for dynamic country rendering
             )
             new_sim_values.append(u_val)
 
     with col_res:
         st.subheader("🎯 " + ("Simülasyon Çıktısı" if lang=="tr" else "Simulation Output"))
         
-        # Real-time calculation with new values
+        # Real-time calculation based on updated simulation values
         sim_pred, _ = calculate_score_engine(sim_country, new_sim_values)
         diff = sim_pred - base_pred
         
-        # Score Card
+        # Metric Score Card
         st.metric(
             label=f"{TARGET_YEAR} " + ("Simüle Edilen Skor" if lang=="tr" else "Simulated Score"),
             value=f"{sim_pred:.2f}",
@@ -323,7 +323,7 @@ with t1:
         st.write(f"**{sim_country} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
         st.success(f"**{base_pred:.2f}**")
         
-        # Summary Analysis
+        # Summary Evaluation
         if abs(diff) > 0.01:
             direction = "artış" if diff > 0 else "düşüş"
             if lang == "en": direction = "increase" if diff > 0 else "decrease"
@@ -334,15 +334,15 @@ with t1:
             ))
         
         if st.button("Değerleri Sıfırla / Reset Values" if lang=="tr" else "Reset Values"):
-            # Clear all input keys for the current simulation country
+            # Clear all session state input keys linked to the current simulated country
             for key in list(st.session_state.keys()):
                 if key.startswith(f"input_{sim_country}_"):
                     del st.session_state[key]
             
-            # Refresh page
+            # Execute application rerun
             st.rerun()
 
-    # Small comparison table at the bottom
+    # Generate comparative data evaluation table within expander
     with st.expander("Değişim Detaylarını Gör / See Change Details"):
         comparison_df = pd.DataFrame({
             "Değişken / Variable": ui_input_names,
@@ -353,7 +353,7 @@ with t1:
         changed_df = comparison_df[comparison_df["Fark / Diff"] != 0]
         st.table(changed_df)
         
-        # PDF DOWNLOAD BUTTON
+        # Generate and provide PDF download option
         pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
         pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
         
@@ -409,7 +409,7 @@ with t2:
         plt.tight_layout()
         st.pyplot(fig)
         
-        # PDF DOWNLOAD BUTTON
+        # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
         pdf_text = f"{c1} (Tahmin/Forecast: {s1:.2f}) VS {c2} (Tahmin/Forecast: {s2:.2f})"
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
@@ -470,7 +470,7 @@ with t3:
             plt.tight_layout()
             st.pyplot(fig_shap)
             
-        # PDF DOWNLOAD BUTTON
+        # Generate and provide PDF download option
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
         pdf_text = (target_text + "\n" + shap_text).replace("**", "")
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_shap)
@@ -505,7 +505,7 @@ with t4:
             ax.set_title(f"{d5} - {feat_dropdown}")
             st.pyplot(fig_trend)
             
-            # PDF DOWNLOAD BUTTON
+            # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
             pdf_text = f"Ulke/Country: {d5}\nIncelenen Degisken/Variable: {feat_dropdown}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
@@ -521,7 +521,7 @@ with t4:
 
 
 # ============================================================
-# TAB 5: SENSITIVITY ANALYSIS (FORMER TAB 1)
+# TAB 5: SENSITIVITY ANALYSIS
 # ============================================================
 with t5:
     st.markdown("### " + (f"{INPUT_YEAR} Verileri Üzerinden Etki Analizi" if lang=="tr" else f"Impact Analysis based on {INPUT_YEAR} Data"))
@@ -566,7 +566,7 @@ with t5:
         
         st.markdown(report)
         
-        # PDF DOWNLOAD BUTTON
+        # Generate and provide PDF download option
         clean_report = report.replace("**", "") 
         pdf_bytes = generate_pdf_report("Duyarlilik Analizi Raporu" if lang=="tr" else "Sensitivity Analysis Report", clean_report)
         st.download_button(
@@ -580,7 +580,7 @@ with t5:
 
 # ============================================================
 # ============================================================
-# TAB 6: GLOBAL LEADERBOARD & MAP (YENİ EKLENEN SEKME)
+# TAB 6: GLOBAL LEADERBOARD & MAP
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Sıralama ve Harita" if lang=="tr" else "Global Leaderboard & Map"))
@@ -597,7 +597,7 @@ with t6:
                 p, _ = calculate_score_engine(c, get_raw_values(c))
                 act_str = get_actual_gii(c, lang)
                 
-                # Try to convert actual value to float, else put NaN
+                # Attempt to parse actual value to float, otherwise assign NaN
                 try:
                     act_val = float(act_str)
                 except ValueError:
@@ -611,7 +611,7 @@ with t6:
             
             df_map = pd.DataFrame(map_data)
             
-            # ---> YENİ EKLENEN: Plotly harita uyumluluğu için eşleştirme sözlüğü <---
+            # Mapping dictionary for Plotly map compatibility
             country_name_mapping = {
                 "Turkiye": "Turkey",
                 "Türkiye": "Turkey",
@@ -630,17 +630,17 @@ with t6:
                 "Venezuela": "Venezuela, Bolivarian Republic of",
                 "Ivory Coast": "Cote d'Ivoire",
                 "Taiwan": "Taiwan, Province of China"
-                # Veri setinde haritada gri kalan
+                # Handles regions that remain gray/unresolved in the dataset
             }
             
-            # Sadece harita çiziminde kullanılması için gizli bir sütun açıyoruz
+            # Create a hidden column exclusively for map plotting purposes
             df_map["Harita_Icin_Ulke"] = df_map["Ülke / Country"].replace(country_name_mapping)
             
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
                 st.write("**Sıralama Tablosu / Leaderboard**" if lang=="tr" else "**Leaderboard**")
-                # Tabloda orijinal isimler görünmeye devam edecek, yeni sütunu düşürüp gösteriyoruz
+                # Retain original names in the table by dropping the mapping column
                 st.dataframe(
                     df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
                     use_container_width=True
@@ -651,12 +651,12 @@ with t6:
                 
                 fig_map = px.choropleth(
                     df_map, 
-                    locations="Harita_Icin_Ulke", # Harita için eşleştirilmiş İngilizce isimleri kullanıyoruz
+                    locations="Harita_Icin_Ulke", # Use mapped English names for map locations
                     locationmode="country names",
                     color="Tahmin / Forecast",
-                    hover_name="Ülke / Country", # Fare üzerine gelince orijinal isim görünecek
+                    hover_name="Ülke / Country", # Display original name on hover
                     hover_data={
-                        "Harita_Icin_Ulke": False, # Hover penceresinde bu teknik sütunu gizliyoruz
+                        "Harita_Icin_Ulke": False, # Hide technical mapping column from hover data
                         "Ülke / Country": False, 
                         "Tahmin / Forecast": True, 
                         "Gerçekleşen / Actual": True
@@ -665,12 +665,12 @@ with t6:
                     title="GII 2025 - Tahmin / Forecast"
                 )
                 
-                # Ülkeleri belli etmek için kırmızı noktalar (marker) ekliyoruz
+                # Add red markers to highlight countries
                 fig_map.add_scattergeo(
-                    locations=df_map["Harita_Icin_Ulke"], # Burada da eşleştirilmiş isimleri kullanıyoruz
+                    locations=df_map["Harita_Icin_Ulke"], # Use mapped names for marker locations
                     locationmode="country names",
                     marker=dict(color="red", size=4, symbol="circle"),
-                    hoverinfo="skip" # Alt katmandaki hover zaten çalıştığı için bunu gizliyoruz
+                    hoverinfo="skip" # Hide hover info to avoid overlap with base map hover
                 )
                 
                 fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
@@ -678,7 +678,7 @@ with t6:
 
 
 # ============================================================
-# TAB 7: DATA EXPLORER & CORRELATION (YENİ EKLENEN SEKME)
+# TAB 7: DATA EXPLORER & CORRELATION
 # ============================================================
 with t7:
     st.markdown("### " + ("Veri Keşfi ve Korelasyon" if lang=="tr" else "Data Explorer & Correlation"))
