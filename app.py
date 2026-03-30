@@ -16,6 +16,93 @@ from fpdf import FPDF # terminalde: pip install fpdf2
 st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
 
 # ============================================================
+# UI/UX PROFESYONELLEŞTİRME (CSS ENJEKSİYONU)
+# ============================================================
+st.markdown("""
+<style>
+    /* Ana arka planı çok hafif kurumsal gri yaparak beyaz kartların öne çıkmasını sağlama */
+    .stApp {
+        background-color: #f4f6f9;
+    }
+    
+    /* Üst menü ve footer gizleme (daha temiz, app benzeri görünüm) */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Sekme (Tab) menüsünü modernize etme */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        padding-bottom: 10px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #ffffff;
+        border-radius: 6px 6px 0px 0px;
+        border: 1px solid #e0e6ed;
+        border-bottom: none;
+        padding: 10px 24px;
+        color: #64748b;
+        font-weight: 600;
+        box-shadow: 0px -2px 5px rgba(0,0,0,0.02);
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #6fa8dc;
+        color: #ffffff !important;
+        border-color: #6fa8dc;
+    }
+
+    /* Metrik (Skor) kartlarını gölgeli ve şık hale getirme */
+    div[data-testid="metric-container"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Butonları daha premium gösterme */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+        border-color: #6fa8dc;
+        color: #6fa8dc;
+    }
+
+    /* Primary buton özel stili */
+    .stButton>button[data-baseweb="button"]:has(div) {
+        /* Streamlit'in varsayılan primary butonuna dokunmuyoruz, genel efekti veriyoruz */
+    }
+
+    /* Expander (Açılır kutular) stili */
+    .streamlit-expanderHeader {
+        background-color: #ffffff;
+        border-radius: 8px;
+        font-weight: 600;
+        border: 1px solid #e2e8f0;
+    }
+    
+    /* Sidebar stili */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
+        box-shadow: 2px 0px 10px rgba(0,0,0,0.03);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================================
 # ============================================================
 # PDF OLUŞTURMA YARDIMCI FONKSİYONU (KESİN ÇÖZÜM)
 # ============================================================
