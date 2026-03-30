@@ -510,14 +510,14 @@ with t4:
         if actual_col and actual_col in country_data.columns:
             x, y = country_data[year_col].astype(int).tolist(), country_data[actual_col].tolist()
             
-            # --- GRAFİK GÜNCELLEMELERİ BURADA ---
-            # Grafiği daha küçük ve orantılı hale getirdik:
+            # --- CHART UPDATES HERE ---
+            # Adjusted the chart size to be more proportional:
             fig_trend, ax = plt.subplots(figsize=(7, 4)) 
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
             
-            # Alt eksende (X) sadece tam sayı olan yılları gösteriyoruz (2021.5 gibi aralıkları gizler):
+            # Displaying only integer years on the X-axis (hiding decimal intervals like 2021.5):
             ax.set_xticks(x) 
             # ------------------------------------
             
@@ -535,7 +535,6 @@ with t4:
                 key="dl_t4"
             )
         else:
-            # 
             st.error("Veri bulunamadı." if lang == "tr" else "Data not found.")
 
 # ============================================================
@@ -658,7 +657,7 @@ with t6:
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
-                # Tablo üst yazısını analitik dile uygun güncelledik
+                # Updated the table header text to align with analytical terminology
                 st.write("**Performans Sıralaması / Performance Ranking**" if lang=="tr" else "**Performance Ranking**")
                 # Retain original names in the table by dropping the mapping column
                 st.dataframe(
@@ -667,7 +666,7 @@ with t6:
                 )
             
             with col_m2:
-                # Harita üst yazısını analitik dile uygun güncelledik
+                # Updated the map header text to align with analytical terminology
                 st.write("**Mekansal Dağılım Haritası / Spatial Distribution Map**" if lang=="tr" else "**Spatial Distribution Map**")
                 
                 fig_map = px.choropleth(
