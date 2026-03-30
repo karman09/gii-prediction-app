@@ -17,7 +17,7 @@ st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wid
 
 # ============================================================
 # ============================================================
-# PDF OLUŞTURMA YARDIMCI FONKSİYONU (SON GÜNCELLEME)
+# PDF OLUŞTURMA YARDIMCI FONKSİYONU (KESİN ÇÖZÜM)
 # ============================================================
 def generate_pdf_report(title, text_content="", fig=None):
     """Metin ve grafikleri alıp PDF byte verisine çeviren yardımcı fonksiyon."""
@@ -38,16 +38,10 @@ def generate_pdf_report(title, text_content="", fig=None):
         pdf.set_font("Helvetica", size=11)
         safe_text = str(text_content).translate(tr_map).encode('latin-1', 'ignore').decode('latin-1')
         
-        # Satırları parçala ve FPDF'in kafasını karıştıran boşlukları temizle
-        for line in safe_text.split('\n'):
-            clean_line = line.strip() # Satır başındaki/sonundaki boşlukları siler
-            
-            if clean_line: # Eğer satır tamamen boş değilse yazdır
-                pdf.multi_cell(0, 8, txt=clean_line)
-            else: # Eğer satır boşsa, sadece biraz aşağı in (paragraf boşluğu)
-                pdf.ln(4)
-                
-        pdf.ln(5)
+        # multi_cell yerine doğrudan write kullanıyoruz.
+        # write fonksiyonu metni akıtır, uzun kelimelerde veya boşluklarda çökmez.
+        pdf.write(h=8, txt=safe_text)
+        pdf.ln(10) # Metin bitince grafikle arasına boşluk bırak
         
     # Grafik
     if fig:
