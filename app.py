@@ -14,7 +14,7 @@ import tempfile
 from fpdf import FPDF # Requirement: pip install fpdf2
 import plotly.express as px # Requirement: pip install plotly (Utilized for maps and heatmaps)
 
-st.set_page_config(page_title="D-LOGII Dashboard", page_icon="📊", layout="wide")
+st.set_page_config(page_title="GII 2025 Strategic Prediction Interface", page_icon="📊", layout="wide")
 
 # ============================================================
 # PROFESSIONAL THEME AND UI CSS INJECTION
