@@ -539,6 +539,7 @@ with t4:
 
 # ============================================================
 # ============================================================
+# ============================================================
 # TAB 5: SENSITIVITY ANALYSIS
 # ============================================================
 with t5:
@@ -558,8 +559,16 @@ with t5:
         for i, orig_name in enumerate(ui_input_names):
             val = adv_inputs[i]
             is_cost = orig_name.lower().strip() in cost_cols
-            new_val = val * 0.90 if is_cost else val * 1.10
-            act = "AZALTILIRSA" if lang == "tr" else "DECREASED" if is_cost else "ARTIRILIRSA" if lang == "tr" else "INCREASED"
+            
+            # --- DÜZELTİLEN KISIM BAŞLANGICI ---
+            if is_cost:
+                new_val = val * 0.90
+                act = "AZALTILIRSA" if lang == "tr" else "DECREASED"
+            else:
+                new_val = val * 1.10
+                act = "ARTIRILIRSA" if lang == "tr" else "INCREASED"
+            # --- DÜZELTİLEN KISIM BİTİŞİ ---
+            
             temp = adv_inputs.copy()
             temp[i] = new_val
             new_score, _ = calculate_score_engine(adv_country, temp)
