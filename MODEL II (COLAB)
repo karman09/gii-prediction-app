@@ -1,0 +1,285 @@
+# -*- coding: utf-8 -*-
+import pandas as pd
+import numpy as np
+import time
+import warnings
+
+# --- 1) SUPPRESS WARNINGS ---
+warnings.filterwarnings('ignore')
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import KNNImputer
+from sklearn.linear_model import LassoCV
+from sklearn.model_selection import KFold, RandomizedSearchCV, train_test_split
+
+from sklearn.metrics import (
+    r2_score, mean_squared_error,
+    mean_absolute_error, mean_absolute_percentage_error
+)
+
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from scipy.stats import loguniform, randint, uniform
+
+import xgboost as xgb
+import lightgbm as lgb
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
+from sklearn.tree import DecisionTreeRegressor
+
+# ============================================================
+# HELPER FUNCTIONS AND DEFINITIONS
+# ============================================================
+
+param_descriptions = {
+    "colsample_bytree": "Feature sampling rate per tree",
+    "gamma": "Min. loss reduction for further partition",
+    "learning_rate": "Step size shrinkage used in update",
+    "max_depth": "Maximum depth of a tree",
+    "min_child_weight": "Minimum sum of instance weight needed in a child",
+    "n_estimators": "Number of boosting iterations",
+    "reg_alpha": "L1 regularization term (Lasso)",
+    "reg_lambda": "L2 regularization term (Ridge)",
+    "subsample": "Fraction of training data sampled for each tree",
+    "num_leaves": "Maximum tree leaves for base learners",
+    "min_child_samples": "Minimum number of data points in a leaf",
+    "min_samples_split": "Minimum samples required to split an internal node",
+    "min_samples_leaf": "Minimum samples required at a leaf node",
+    "max_features": "Number of features to consider when looking for the best split"
+}
+
+def get_range_str(dist_obj):
+    """Returns a string representation of the hyperparameter search space."""
+    try:
+        if isinstance(dist_obj, list):
+            return str(dist_obj)
+        if hasattr(dist_obj, 'dist'):
+            name = dist_obj.dist.name
+            if name == 'randint':
+                low, high = dist_obj.args
+                return f"[{low}, {high}]"
+            elif name == 'uniform':
+                loc, scale = dist_obj.args
+                return f"[{loc}, {loc + scale}]"
+            elif name in ['reciprocal', 'loguniform']:
+                a, b = dist_obj.args
+                return f"[{a}, {b}]"
+        return str(dist_obj)
+    except:
+        return str(dist_obj)
+
+# ============================================================
+# 1) DATA LOADING AND INITIAL SPLIT
+# ============================================================
+
+df = pd.read_excel("/content/DATA_averages_5yr_.xlsx")
+
+TARGET = "Global Innovation Index"
+COUNTRY_COL = "country_canonical" if "country_canonical" in df.columns else None
+
+cols_to_drop = [TARGET]
+if COUNTRY_COL:
+    cols_to_drop.append(COUNTRY_COL)
+
+X_raw = df.drop(columns=cols_to_drop)
+y_raw = df[TARGET]
+X_raw = X_raw.select_dtypes(include=[np.number])
+
+print(f"Initial feature count: {X_raw.shape[1]}")
+
+X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+    X_raw, y_raw, test_size=0.20, random_state=42
+)
+
+X_train_raw = X_train_raw.reset_index(drop=True)
+X_test_raw = X_test_raw.reset_index(drop=True)
+y_train = y_train.reset_index(drop=True)
+y_test = y_test.reset_index(drop=True)
+
+# ============================================================
+# 2) OUTLIER HANDLING (MODIFIED Z-SCORE)
+# ============================================================
+
+def handle_outliers(df_train, df_test):
+    """Capping outliers using Modified Z-Score based on median."""
+    df_train_o = df_train.copy()
+    df_test_o = df_test.copy()
+    for col in df_train.columns:
+        series = df_train[col].dropna()
+        if len(series) == 0: continue
+        median = np.median(series)
+        mad = np.median(np.abs(series - median))
+        if mad == 0: continue
+
+        mz_train = 0.6745 * (df_train[col] - median) / mad
+        df_train_o.loc[np.abs(mz_train) > 3.5, col] = median
+
+        mz_test = 0.6745 * (df_test[col] - median) / mad
+        df_test_o.loc[np.abs(mz_test) > 3.5, col] = median
+    return df_train_o, df_test_o
+
+X_train_o, X_test_o = handle_outliers(X_train_raw, X_test_raw)
+
+# ============================================================
+# 3) KNN IMPUTATION
+# ============================================================
+
+scaler = StandardScaler()
+X_train_scaled_arr = scaler.fit_transform(X_train_o)
+X_test_scaled_arr = scaler.transform(X_test_o)
+
+knn = KNNImputer(n_neighbors=5, weights="distance")
+X_train_knn_arr = knn.fit_transform(X_train_scaled_arr)
+X_test_knn_arr = knn.transform(X_test_scaled_arr)
+
+X_train_knn = pd.DataFrame(scaler.inverse_transform(X_train_knn_arr), columns=X_train_o.columns)
+X_test_knn = pd.DataFrame(scaler.inverse_transform(X_test_knn_arr), columns=X_test_o.columns)
+
+# ============================================================
+# 4) FINAL SCALING
+# ============================================================
+
+scaler2 = StandardScaler()
+X_train_scaled2 = pd.DataFrame(scaler2.fit_transform(X_train_knn), columns=X_train_knn.columns)
+X_test_scaled2 = pd.DataFrame(scaler2.transform(X_test_knn), columns=X_test_knn.columns)
+
+# ============================================================
+# 5) FEATURE SELECTION (LASSO)
+# ============================================================
+
+print(f"\n--- Feature Selection: LASSO ---")
+lasso = LassoCV(cv=5, random_state=42)
+lasso.fit(X_train_scaled2, y_train)
+
+# Filtering features with non-zero coefficients
+lasso_idx = np.where(lasso.coef_ != 0)[0]
+final_features = [X_train_scaled2.columns[i] for i in lasso_idx]
+
+print(f"Features selected by LASSO: {len(final_features)}")
+print("FINAL FEATURES:", final_features)
+
+X_train_final = X_train_scaled2[final_features]
+X_test_final = X_test_scaled2[final_features]
+
+X_train_model = X_train_final.values
+X_test_model = X_test_final.values
+
+# ============================================================
+# 6) MODEL DEFINITIONS
+# ============================================================
+
+models = {
+    "XGBoost": (
+        xgb.XGBRegressor(objective="reg:squarederror", tree_method="hist", n_jobs=-1, random_state=42),
+        {
+            "n_estimators": randint(400, 1200),
+            "learning_rate": loguniform(0.003, 0.05),
+            "max_depth": randint(3, 10),
+            "min_child_weight": randint(1, 15),
+            "subsample": uniform(0.7, 0.3),
+            "colsample_bytree": uniform(0.6, 0.4),
+            "gamma": loguniform(1e-5, 1.0),
+            "reg_alpha": loguniform(1e-8, 1.0),
+            "reg_lambda": loguniform(1e-8, 1.0)
+        }
+    ),
+    "LightGBM": (
+        lgb.LGBMRegressor(random_state=42, n_jobs=-1, verbose=-1),
+        {
+            "n_estimators": randint(400, 1200),
+            "learning_rate": loguniform(0.003, 0.05),
+            "num_leaves": randint(31, 256),
+            "max_depth": randint(-1, 12),
+            "min_child_samples": randint(5, 60),
+            "subsample": uniform(0.7, 0.3),
+            "colsample_bytree": uniform(0.6, 0.4),
+            "reg_alpha": loguniform(1e-8, 1.0),
+            "reg_lambda": loguniform(1e-8, 1.0)
+        }
+    ),
+    "RandomForest": (
+        RandomForestRegressor(random_state=42, n_jobs=-1),
+        {
+            "n_estimators": randint(500, 1500),
+            "max_depth": randint(5, 40),
+            "min_samples_split": randint(2, 20),
+            "min_samples_leaf": randint(1, 10),
+            "max_features": ["sqrt", "log2", None]
+        }
+    ),
+    "AdaBoost": (
+        AdaBoostRegressor(estimator=DecisionTreeRegressor(max_depth=2), random_state=42),
+        {
+            "n_estimators": randint(200, 800),
+            "learning_rate": loguniform(0.003, 0.2),
+            "loss": ["linear", "square", "exponential"]
+        }
+    )
+}
+
+# ============================================================
+# 7) TRAINING AND METRIC EVALUATION
+# ============================================================
+
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+metrics_list = []
+hyper_params_list = []
+best_models = {}
+
+print("\nStarting model training...")
+
+for name, (model, params) in models.items():
+    print(f"-> Training {name}...")
+    start = time.time()
+    search = RandomizedSearchCV(model, params, n_iter=50, cv=kf, scoring="r2", random_state=42, n_jobs=-1, verbose=0)
+    search.fit(X_train_model, y_train)
+    elapsed = time.time() - start
+
+    best_models[name] = search.best_estimator_
+    best_params_found = search.best_params_
+
+    for param_name, dist_obj in params.items():
+        hyper_params_list.append({
+            "Model Name": name,
+            "Hyperparameter": param_name,
+            "Description": param_descriptions.get(param_name, "-"),
+            "Range": get_range_str(dist_obj),
+            "Optimal Value": best_params_found.get(param_name)
+        })
+
+    cv_scores = []
+    for tr_idx, val_idx in kf.split(X_train_model):
+        X_tr, X_val = X_train_model[tr_idx], X_train_model[val_idx]
+        y_tr, y_val = y_train.iloc[tr_idx], y_train.iloc[val_idx]
+        clone_model = search.best_estimator_
+        clone_model.fit(X_tr, y_tr)
+        cv_scores.append(r2_score(y_val, clone_model.predict(X_val)))
+
+    y_pred_test = best_models[name].predict(X_test_model)
+    y_pred_train = best_models[name].predict(X_train_model)
+
+    metrics_list.append({
+        "Model": name,
+        "Train R2": r2_score(y_train, y_pred_train),
+        "Test R2": r2_score(y_test, y_pred_test),
+        "RMSE": np.sqrt(mean_squared_error(y_test, y_pred_test)),
+        "MAE": mean_absolute_error(y_test, y_pred_test),
+        "MAPE %": mean_absolute_percentage_error(y_test, y_pred_test) * 100,
+        "CV R2 Mean": np.mean(cv_scores),
+        "CV R2 Std": np.std(cv_scores),
+        "Time (s)": elapsed
+    })
+
+metrics_df = pd.DataFrame(metrics_list).sort_values("Test R2", ascending=False)
+hyper_df = pd.DataFrame(hyper_params_list)
+
+# ============================================================
+# 8) EXCEL EXPORT
+# ============================================================
+
+out_path = "GII_FINAL_LASSO_RESULTS.xlsx"
+with pd.ExcelWriter(out_path) as writer:
+    metrics_df.to_excel(writer, sheet_name="Metrics", index=False)
+    hyper_df.to_excel(writer, sheet_name="Hyperparameters", index=False)
+    pd.DataFrame({"Features": final_features}).to_excel(writer, sheet_name="Selected_Features", index=False)
+
+print("\n✔ Process Completed. Excel saved to:", out_path)
+print(metrics_df[["Model", "Test R2", "CV R2 Mean", "RMSE"]])
