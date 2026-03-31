@@ -1,0 +1,293 @@
+# -*- coding: utf-8 -*-
+"""
+################## MODEL I 
+"""
+
+import pandas as pd
+import numpy as np
+import joblib
+import time
+import warnings
+import re
+from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import (
+    r2_score, mean_squared_error, mean_absolute_error,
+    mean_absolute_percentage_error
+)
+from scipy.stats import uniform, randint, loguniform
+from sklearn.linear_model import LassoCV
+import xgboost as xgb
+import lightgbm as lgb
+
+warnings.filterwarnings("ignore")
+
+# ============================================================
+# 1. CONFIGURATION & PATHS
+# ============================================================
+INPUT_PATH = "/content/FINAL_DATA.xlsx"
+OUTPUT_PREPROCESSED = "/content/FINAL_PREPROCESSED_DATA.xlsx"
+OUTPUT_DETAILED_RESULTS = "/content/GII_2025_DETAILED_RESULTS.xlsx"
+OUTPUT_BEST_PREDICTIONS = "/content/BEST_MODEL_PREDICTIONS_2025.xlsx"
+OUTPUT_HP_TABLE = "/content/GII_HYPERPARAMETER_TABLE.xlsx"
+OUTPUT_YEARLY_SUMMARY = "/content/YEARLY_SUMMARY_REPORTS.xlsx"
+
+SCALER_PATH = "/content/SCALER.pkl"
+SCALER_COLS_PATH = "/content/SCALER_COLUMNS.pkl"
+COST_COLS_PATH = "/content/COST_COLS.pkl"
+MODEL_SAVE_PATH = "/content/BEST_MODEL.pkl"
+FEATURES_SAVE_PATH = "/content/BEST_MODEL_FEATURES.pkl"
+
+YEAR_COL = "year"
+TARGET_COL = "Global Innovation Index"
+TRAIN_YEARS = [2021, 2022, 2023, 2024]
+TEST_YEAR = 2025
+N_ITER = 50
+RANDOM_STATE = 42
+CV_VAL = 5
+
+COST_CRITERIA = [
+    "Operational stability for businesses*",
+    "Applied tariff rate, weighted avg., %",
+    "Domestic industry diversification",
+]
+
+# ============================================================
+# 2. DATA LOADING & INITIALIZATION
+# ============================================================
+df = pd.read_excel(INPUT_PATH)
+
+def find_country_col(df):
+    for c in df.columns:
+        if "country" in c.lower() or "economy" in c.lower():
+            return c
+    return df.select_dtypes(include=["object"]).columns[0]
+
+COUNTRY_COL = find_country_col(df)
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+process_cols = [c for c in numeric_cols if c not in [YEAR_COL, TARGET_COL, COUNTRY_COL]]
+
+# ============================================================
+# 3. PREPROCESSING PIPELINE
+# ============================================================
+train_mask = df[YEAR_COL].isin(TRAIN_YEARS)
+test_mask = df[YEAR_COL] == TEST_YEAR
+
+Xtr0 = df.loc[train_mask, process_cols].copy()
+Xte0 = df.loc[test_mask, process_cols].copy()
+
+# Outlier Detection (Modified Z-Score)
+median_train = Xtr0.median()
+MAD_train = (Xtr0 - median_train).abs().median().replace(0, 1e-9)
+modz = 0.6745 * (Xtr0 - median_train) / MAD_train
+outlier_mask = (np.abs(modz) > 3.5)
+
+Xtr1 = Xtr0.mask(outlier_mask)
+Xte1 = Xte0.copy()
+
+# Imputation Steps
+median_fill = Xtr0.median()
+Xtr2 = Xtr1.copy()
+for col in Xtr2.columns:
+    Xtr2.loc[outlier_mask[col], col] = median_fill[col]
+Xte2 = Xte1.copy()
+
+temp_scaler = StandardScaler()
+Xtr2_scaled = pd.DataFrame(temp_scaler.fit_transform(Xtr2), columns=Xtr2.columns, index=Xtr2.index)
+Xte2_scaled = pd.DataFrame(temp_scaler.transform(Xte2), columns=Xte2.columns, index=Xte2.index)
+
+imp = KNNImputer(n_neighbors=5)
+Xtr3_scaled = pd.DataFrame(imp.fit_transform(Xtr2_scaled), columns=Xtr2.columns, index=Xtr2.index)
+Xte3_scaled = pd.DataFrame(imp.transform(Xte2_scaled), columns=Xte2.columns, index=Xte2.index)
+
+Xtr3 = pd.DataFrame(temp_scaler.inverse_transform(Xtr3_scaled), columns=Xtr2.columns, index=Xtr2.index)
+Xte3 = pd.DataFrame(temp_scaler.inverse_transform(Xte3_scaled), columns=Xte2.columns, index=Xte2.index)
+
+# Final Scaling & Artifact Saving
+final_scaler = StandardScaler()
+Xtr4 = pd.DataFrame(final_scaler.fit_transform(Xtr3), columns=Xtr3.columns, index=Xtr3.index)
+Xte4 = pd.DataFrame(final_scaler.transform(Xte3), columns=Xte3.columns, index=Xte3.index)
+
+joblib.dump(final_scaler, SCALER_PATH)
+joblib.dump(Xtr3.columns.tolist(), SCALER_COLS_PATH)
+
+# Cost-Criteria Inversion
+cost_set = {c.lower().strip() for c in COST_CRITERIA}
+joblib.dump(list(cost_set), COST_COLS_PATH)
+
+for col in process_cols:
+    if col.lower().strip() in cost_set:
+        Xtr4[col] = -Xtr4[col]
+        Xte4[col] = -Xte4[col]
+
+df_processed = df.copy()
+df_processed.loc[train_mask, process_cols] = Xtr4
+df_processed.loc[test_mask, process_cols] = Xte4
+df_processed.to_excel(OUTPUT_PREPROCESSED, index=False)
+
+# ============================================================
+# 4. YEARLY SUMMARY REPORTS (ENGLISH)
+# ============================================================
+def create_summary(df_subset, cols):
+    summary_data = []
+    for col in cols:
+        series = df_subset[col]
+        valid = series.dropna()
+        modz_count = 0
+        if len(valid) > 0:
+            m = valid.median()
+            mad = (valid - m).abs().median()
+            if mad == 0: mad = 1e-9
+            modz_vals = 0.6745 * (valid - m) / mad
+            modz_count = (np.abs(modz_vals) > 3.5).sum()
+        
+        summary_data.append({
+            "Feature": col,
+            "Mean": round(series.mean(), 2),
+            "Median": round(series.median(), 2),
+            "StdDev": round(series.std(), 2),
+            "Min": round(series.min(), 2),
+            "Max": round(series.max(), 2),
+            "Outliers": int(modz_count),
+            "Missing": int(series.isna().sum())
+        })
+    return pd.DataFrame(summary_data)
+
+with pd.ExcelWriter(OUTPUT_YEARLY_SUMMARY, engine='openpyxl') as writer:
+    all_years = sorted(df[YEAR_COL].dropna().unique())
+    report_cols = process_cols + [TARGET_COL]
+    for y in all_years:
+        summary_df = create_summary(df[df[YEAR_COL] == y], report_cols)
+        summary_df.to_excel(writer, sheet_name=str(int(y)), index=False)
+
+# ============================================================
+# 5. PREDICTION PIPELINE FUNCTIONS
+# ============================================================
+def sanitize_cols(cols):
+    return [re.sub(r"[^A-Za-z0-9_]", "", c) for c in cols]
+
+def build_lagged_block(df_block, features, lag):
+    d = df_block.sort_values([COUNTRY_COL, YEAR_COL]).copy()
+    lag_cols = []
+    for f in features:
+        c = f"{f}_lag{lag}"
+        d[c] = d.groupby(COUNTRY_COL)[f].shift(lag)
+        lag_cols.append(c)
+    return d, lag_cols
+
+def select_features_strict(train_df, candidates, lag):
+    d_temp = train_df.sort_values([COUNTRY_COL, YEAR_COL]).copy()
+    lagged_names = []
+    for f in candidates:
+        c = f"{f}_lag{lag}"
+        d_temp[c] = d_temp.groupby(COUNTRY_COL)[f].shift(lag)
+        lagged_names.append(c)
+    
+    work = d_temp.dropna(subset=lagged_names + [TARGET_COL])
+    if len(work) < 15: return candidates
+    X, y = work[lagged_names], work[TARGET_COL]
+    
+    try:
+        lasso = LassoCV(cv=CV_VAL, random_state=RANDOM_STATE, n_jobs=-1).fit(X, y)
+        cols = X.columns[np.abs(lasso.coef_) > 1e-5].tolist()
+    except:
+        cols = X.columns.tolist()
+    
+    if len(cols) == 0:
+        cols = X.corrwith(y).abs().sort_values(ascending=False).head(10).index.tolist()
+    
+    return [c.replace(f"_lag{lag}", "") for c in cols]
+
+# ============================================================
+# 6. MODEL DEFINITIONS
+# ============================================================
+models_and_params = {
+    "XGBoost": (xgb.XGBRegressor(objective="reg:squarederror", random_state=RANDOM_STATE, tree_method="hist", n_jobs=-1),
+        {"n_estimators": randint(200, 600), "learning_rate": loguniform(0.01, 0.3), "max_depth": randint(3, 10), "subsample": uniform(0.5, 0.5), "colsample_bytree": uniform(0.5, 0.5), "min_child_weight": randint(1, 10), "gamma": uniform(0, 0.5), "reg_alpha": loguniform(1e-3, 10), "reg_lambda": loguniform(1e-3, 10)}),
+    "LightGBM": (lgb.LGBMRegressor(random_state=RANDOM_STATE, verbose=-1, n_jobs=-1),
+        {"n_estimators": randint(200, 600), "learning_rate": loguniform(0.01, 0.1), "max_depth": randint(3, 15), "num_leaves": randint(15, 100), "subsample": uniform(0.5, 0.5), "colsample_bytree": uniform(0.5, 0.5), "min_child_samples": randint(5, 30), "reg_alpha": loguniform(1e-3, 10), "reg_lambda": loguniform(1e-3, 10)}),
+    "RandomForest": (RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=-1),
+        {"n_estimators": randint(200, 600), "max_depth": randint(5, 25), "min_samples_split": randint(2, 15), "max_features": uniform(0.3, 0.6), "min_samples_leaf": randint(1, 10)}),
+    "AdaBoost": (AdaBoostRegressor(random_state=RANDOM_STATE),
+        {"n_estimators": randint(100, 500), "learning_rate": loguniform(0.005, 0.2), "loss": ["linear", "square", "exponential"]})
+}
+
+# ============================================================
+# 7. NESTED TEMPORAL CV & FINAL MODELING
+# ============================================================
+final_results, hp_table_rows = [], []
+global_best_rmse = float('inf')
+global_best_predictions = pd.DataFrame()
+global_best_model_obj, global_best_features = None, []
+
+for LAG in [1, 2]:
+    current_seed = RANDOM_STATE + (LAG * 11)
+    for name, (model, params) in models_and_params.items():
+        start_time = time.time()
+        outer_r2, outer_rmse = [], []
+        years = sorted(TRAIN_YEARS)
+        
+        for i in range(max(1, LAG), len(years)):
+            tr_years, val_year = years[:i], years[i]
+            selected_feats = select_features_strict(df_processed[df_processed[YEAR_COL].isin(tr_years)], process_cols, LAG)
+            block = df_processed[df_processed[YEAR_COL].isin(tr_years + [val_year])].copy()
+            d, lag_cols = build_lagged_block(block, selected_feats, LAG)
+            work = d.dropna(subset=lag_cols + [TARGET_COL])
+            
+            tr_part, val_part = work[work[YEAR_COL].isin(tr_years)], work[work[YEAR_COL] == val_year]
+            if tr_part.empty or val_part.empty: continue
+            
+            X_tr, y_tr = tr_part[lag_cols], tr_part[TARGET_COL]
+            X_val, y_val = val_part[lag_cols], val_part[TARGET_COL]
+            X_tr.columns = X_val.columns = sanitize_cols(lag_cols)
+            
+            if len(X_tr) > CV_VAL * 2:
+                search = RandomizedSearchCV(model.__class__(**model.get_params()), params, n_iter=N_ITER, cv=CV_VAL, scoring='neg_mean_squared_error', n_jobs=-1, random_state=current_seed).fit(X_tr, y_tr)
+                best_m = search.best_estimator_
+            else:
+                best_m = model.__class__(**model.get_params()).fit(X_tr, y_tr)
+                
+            pred = np.clip(best_m.predict(X_val), 0, 100)
+            outer_r2.append(r2_score(y_val, pred))
+            outer_rmse.append(np.sqrt(mean_squared_error(y_val, pred)))
+
+        # Final Training for Test Year
+        final_selected = select_features_strict(df_processed[df_processed[YEAR_COL].isin(TRAIN_YEARS)], process_cols, LAG)
+        block_final = df_processed[df_processed[YEAR_COL].isin(TRAIN_YEARS + [TEST_YEAR])].copy()
+        d_f, lag_cols_f = build_lagged_block(block_final, final_selected, LAG)
+        work_f = d_f.dropna(subset=lag_cols_f + [TARGET_COL])
+        
+        tr_f, te_f = work_f[work_f[YEAR_COL].isin(TRAIN_YEARS)], work_f[work_f[YEAR_COL] == TEST_YEAR]
+        if not tr_f.empty and not te_f.empty:
+            X_tr_f, y_tr_f = tr_f[lag_cols_f], tr_f[TARGET_COL]
+            X_te_f, y_te_f = te_f[lag_cols_f], te_f[TARGET_COL]
+            X_tr_f.columns = X_te_f.columns = sanitize_cols(lag_cols_f)
+            
+            search_f = RandomizedSearchCV(model.__class__(**model.get_params()), params, n_iter=N_ITER, cv=CV_VAL, scoring='neg_mean_squared_error', n_jobs=-1, random_state=current_seed).fit(X_tr_f, y_tr_f)
+            best_final = search_f.best_estimator_
+            
+            y_pred_te = np.clip(best_final.predict(X_te_f), 0, 100)
+            cur_rmse = np.sqrt(mean_squared_error(y_te_f, y_pred_te))
+            
+            final_results.append({
+                "Model": name, "Lag": LAG, "RMSE": cur_rmse, "Test_R2": r2_score(y_te_f, y_pred_te),
+                "CV_R2_Mean": np.mean(outer_r2) if outer_r2 else np.nan, "Elapsed_Time": round(time.time() - start_time, 2)
+            })
+            
+            if cur_rmse < global_best_rmse:
+                global_best_rmse = cur_rmse
+                global_best_predictions = pd.DataFrame({"Country": te_f[COUNTRY_COL].values, "Year": TEST_YEAR, "Actual": y_te_f.values, "Predicted": y_pred_te})
+                global_best_model_obj, global_best_features = best_final, X_tr_f.columns.tolist()
+
+# ============================================================
+# 8. FINAL EXPORT
+# ============================================================
+pd.DataFrame(final_results).to_excel(OUTPUT_DETAILED_RESULTS, index=False)
+if not global_best_predictions.empty: global_best_predictions.to_excel(OUTPUT_BEST_PREDICTIONS, index=False)
+if global_best_model_obj:
+    joblib.dump(global_best_model_obj, MODEL_SAVE_PATH)
+    joblib.dump(global_best_features, FEATURES_SAVE_PATH)
+
+print("Pipeline execution completed.")
