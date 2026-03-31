@@ -580,7 +580,7 @@ with t5:
         
         if impacts:
             # Tablo başlığı dile göre değişsin
-            tbl_title = f"#### 🎯 {TARGET_YEAR} Skoru İçin Stratejik Müdahale Tablosu" if lang=="tr" else f"#### 🎯 Strategic Intervention Table for {TARGET_YEAR} Score"
+            tbl_title = f"#### {TARGET_YEAR} Skoru İçin Stratejik Müdahale Tablosu" if lang=="tr" else f"#### Strategic Intervention Table for {TARGET_YEAR} Score"
             st.write(tbl_title)
             
             # --- TABLO HAZIRLAMA ---
