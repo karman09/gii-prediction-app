@@ -597,28 +597,20 @@ with t5:
 
 # ============================================================
 # ============================================================
-# ============================================================
-# TAB 6: GLOBAL LEADERBOARD & MAP
+# TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE  SÖZLÜK)
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
-    st.info("💡 " + (
-        "Bu modül, ülkelerin 2025 öngörü skorlarını ve mevcut performans metriklerini dünya haritası üzerinde görselleştirerek, küresel ölçekte kapsamlı bir karşılaştırma yapmanıza olanak tanır." 
-        if lang=="tr" else 
-        "This module allows for a comprehensive global comparison by spatially visualizing the 2025 forecast scores and current performance metrics of countries on a world map."
-    ))
     
     if st.button("Harita ve Sıralamayı Yükle / Load Map & Leaderboard", key="load_map_btn"):
-        with st.spinner("Hesaplanıyor... / Calculating..." if lang=="tr" else "Calculating..."):
+        with st.spinner("Harita ve Sıralama Yükleniyor..."):
             map_data = []
             for c in country_list:
                 p, _ = calculate_score_engine(c, get_raw_values(c))
                 act_str = get_actual_gii(c, lang)
-                
-                # Attempt to parse actual value to float, otherwise assign NaN
                 try:
                     act_val = float(act_str)
-                except ValueError:
+                except:
                     act_val = np.nan
                     
                 map_data.append({
@@ -629,68 +621,103 @@ with t6:
             
             df_map = pd.DataFrame(map_data)
             
-            # Mapping dictionary for Plotly map compatibility
-            country_name_mapping = {
-                "Turkiye": "Turkey",
-                "Türkiye": "Turkey",
-                "United States": "United States of America",
-                "USA": "United States of America",
-                "UK": "United Kingdom",
-                "Great Britain": "United Kingdom",
-                "Czechia": "Czech Republic",
-                "South Korea": "Korea, Republic of Korea",
-                "Russia": "Russian Federation",
-                "Russian Fed.": "Russian Federation",
-                "Iran": "Iran, Islamic Republic of",
-                "Vietnam": "Viet Nam",
-                "Moldova": "Moldova, Republic of",
-                "Bolivia": "Bolivia, Plurinational State of",
-                "Venezuela": "Venezuela, Bolivarian Republic of",
-                "Ivory Coast": "Cote d'Ivoire",
-                "Taiwan": "Taiwan, Province of China"
-                # Handles regions that remain gray/unresolved in the dataset
+            # GII Verisindeki Tüm Olası Ülkeler İçin Plotly Standart İsim Eşleştirmesi
+            full_country_mapping = {
+                "Albania": "Albania", "Algeria": "Algeria", "Angola": "Angola", "Argentina": "Argentina",
+                "Armenia": "Armenia", "Australia": "Australia", "Austria": "Austria", "Azerbaijan": "Azerbaijan",
+                "Bahamas": "Bahamas", "Bahrain": "Bahrain", "Bangladesh": "Bangladesh", "Barbados": "Barbados",
+                "Belarus": "Belarus", "Belgium": "Belgium", "Belize": "Belize", "Benin": "Benin",
+                "Bolivia (Plurinational State of)": "Bolivia", "Bolivia": "Bolivia",
+                "Bosnia and Herzegovina": "Bosnia and Herzegovina", "Botswana": "Botswana", "Brazil": "Brazil",
+                "Brunei Darussalam": "Brunei", "Bulgaria": "Bulgaria", "Burkina Faso": "Burkina Faso",
+                "Burundi": "Burundi", "Cabo Verde": "Cape Verde", "Cambodia": "Cambodia", "Cameroon": "Cameroon",
+                "Canada": "Canada", "Chile": "Chile", "China": "China", "Colombia": "Colombia",
+                "Costa Rica": "Costa Rica", "Côte d'Ivoire": "Cote d'Ivoire", "Cote d'Ivoire": "Cote d'Ivoire",
+                "Croatia": "Croatia", "Cuba": "Cuba", "Cyprus": "Cyprus",
+                "Czech Republic": "Czech Republic", "Czechia": "Czech Republic",
+                "Democratic Republic of the Congo": "Democratic Republic of the Congo", "Congo, Dem. Rep.": "Democratic Republic of the Congo",
+                "Denmark": "Denmark", "Dominican Republic": "Dominican Republic", "Ecuador": "Ecuador",
+                "Egypt": "Egypt", "Egypt, Arab Rep.": "Egypt", "El Salvador": "El Salvador", "Estonia": "Estonia",
+                "Eswatini": "Eswatini", "Ethiopia": "Ethiopia", "Fiji": "Fiji", "Finland": "Finland", "France": "France",
+                "Gabon": "Gabon", "Gambia": "Gambia", "Georgia": "Georgia", "Germany": "Germany",
+                "Ghana": "Ghana", "Greece": "Greece", "Guatemala": "Guatemala", "Guinea": "Guinea",
+                "Honduras": "Honduras", "Hong Kong, China": "Hong Kong", "Hungary": "Hungary",
+                "Iceland": "Iceland", "India": "India", "Indonesia": "Indonesia",
+                "Iran (Islamic Republic of)": "Iran", "Iran": "Iran", "Iraq": "Iraq", "Ireland": "Ireland",
+                "Israel": "Israel", "Italy": "Italy", "Jamaica": "Jamaica", "Japan": "Japan",
+                "Jordan": "Jordan", "Kazakhstan": "Kazakhstan", "Kenya": "Kenya", "Kuwait": "Kuwait",
+                "Kyrgyzstan": "Kyrgyzstan", "Kyrgyz Republic": "Kyrgyzstan",
+                "Lao People's Democratic Republic": "Laos", "Lao People's Dem. Rep.": "Laos", "Lao PDR": "Laos",
+                "Latvia": "Latvia", "Lebanon": "Lebanon", "Lithuania": "Lithuania", "Luxembourg": "Luxembourg",
+                "Madagascar": "Madagascar", "Malawi": "Malawi", "Malaysia": "Malaysia", "Mali": "Mali",
+                "Malta": "Malta", "Mauritania": "Mauritania", "Mauritius": "Mauritius", "Mexico": "Mexico",
+                "Moldova, Republic of": "Moldova", "Republic of Moldova": "Moldova", "Moldova": "Moldova",
+                "Mongolia": "Mongolia", "Montenegro": "Montenegro", "Morocco": "Morocco",
+                "Mozambique": "Mozambique", "Myanmar": "Myanmar", "Namibia": "Namibia", "Nepal": "Nepal",
+                "Netherlands": "Netherlands", "New Zealand": "New Zealand", "Nicaragua": "Nicaragua",
+                "Niger": "Niger", "Nigeria": "Nigeria", "North Macedonia": "North Macedonia",
+                "Norway": "Norway", "Oman": "Oman", "Pakistan": "Pakistan", "Panama": "Panama",
+                "Paraguay": "Paraguay", "Peru": "Peru", "Philippines": "Philippines", "Poland": "Poland",
+                "Portugal": "Portugal", "Qatar": "Qatar",
+                "Korea, Rep.": "South Korea", "Republic of Korea": "South Korea", "South Korea": "South Korea",
+                "Romania": "Romania", "Russian Federation": "Russia", "Russia": "Russia",
+                "Rwanda": "Rwanda", "Saudi Arabia": "Saudi Arabia", "Senegal": "Senegal",
+                "Serbia": "Serbia", "Singapore": "Singapore",
+                "Slovakia": "Slovakia", "Slovak Republic": "Slovakia",
+                "Slovenia": "Slovenia", "South Africa": "South Africa", "Spain": "Spain",
+                "Sri Lanka": "Sri Lanka", "Sweden": "Sweden", "Switzerland": "Switzerland",
+                "Syrian Arab Republic": "Syria", "Syria": "Syria",
+                "Tajikistan": "Tajikistan",
+                "United Republic of Tanzan": "Tanzania", "United Republic of Tanzania": "Tanzania", "Tanzania": "Tanzania",
+                "Thailand": "Thailand", "Togo": "Togo", "Trinidad and Tobago": "Trinidad and Tobago",
+                "Tunisia": "Tunisia", "Türkiye": "Turkey", "Turkiye": "Turkey", "Turkey": "Turkey",
+                "Uganda": "Uganda", "Ukraine": "Ukraine",
+                "United Arab Emirates": "United Arab Emirates",
+                "United Kingdom": "United Kingdom",
+                "United States of America": "United States", "United States": "United States",
+                "Uruguay": "Uruguay", "Uzbekistan": "Uzbekistan",
+                "Venezuela (Bolivarian Republic of)": "Venezuela", "Venezuela": "Venezuela",
+                "Viet Nam": "Vietnam", "Vietnam": "Vietnam",
+                "Yemen": "Yemen", "Zambia": "Zambia", "Zimbabwe": "Zimbabwe"
             }
             
-            # Create a hidden column exclusively for map plotting purposes
-            df_map["Harita_Icin_Ulke"] = df_map["Ülke / Country"].replace(country_name_mapping)
+            # Harita için isimleri tek bir hamlede eşleştir
+            df_map["Harita_Icin_Ulke"] = df_map["Ülke / Country"].replace(full_country_mapping)
             
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
-                # Updated the table header text to align with analytical terminology
                 st.write("**Performans Sıralaması / Performance Ranking**" if lang=="tr" else "**Performance Ranking**")
-                # Retain original names in the table by dropping the mapping column
                 st.dataframe(
                     df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
                     use_container_width=True
                 )
             
             with col_m2:
-                # Updated the map header text to align with analytical terminology
                 st.write("**Mekansal Dağılım Haritası / Spatial Distribution Map**" if lang=="tr" else "**Spatial Distribution Map**")
                 
                 fig_map = px.choropleth(
                     df_map, 
-                    locations="Harita_Icin_Ulke", # Use mapped English names for map locations
+                    locations="Harita_Icin_Ulke", 
                     locationmode="country names",
                     color="Tahmin / Forecast",
-                    hover_name="Ülke / Country", # Display original name on hover
+                    hover_name="Ülke / Country", 
                     hover_data={
-                        "Harita_Icin_Ulke": False, # Hide technical mapping column from hover data
+                        "Harita_Icin_Ulke": False, 
                         "Ülke / Country": False, 
-                        "Tahmin / Forecast": True, 
-                        "Gerçekleşen / Actual": True
+                        "Tahmin / Forecast": ":.2f", 
+                        "Gerçekleşen / Actual": ":.2f"
                     },
                     color_continuous_scale="Viridis",
-                    title="GII 2025 - Tahmin / Forecast"
+                    title="GII 2025 Tahmin Dağılımı / Forecast Distribution"
                 )
                 
-                # Add red markers to highlight countries
+    
                 fig_map.add_scattergeo(
-                    locations=df_map["Harita_Icin_Ulke"], # Use mapped names for marker locations
+                    locations=df_map["Harita_Icin_Ulke"], 
                     locationmode="country names",
-                    marker=dict(color="red", size=4, symbol="circle"),
-                    hoverinfo="skip" # Hide hover info to avoid overlap with base map hover
+                    marker=dict(color="red", size=5, opacity=0.8),
+                    hoverinfo="skip"
                 )
                 
                 fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
