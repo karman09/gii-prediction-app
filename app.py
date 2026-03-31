@@ -539,16 +539,15 @@ with t4:
 
 # ============================================================
 # ============================================================
-# ============================================================
-# TAB 5: SENSITIVITY ANALYSIS
+# TAB 5: SENSITIVITY ANALYSIS 
 # ============================================================
 with t5:
     st.markdown("### " + (f"Senaryo Bazlı Duyarlılık Analizi ({INPUT_YEAR})" if lang=="tr" else f"Scenario-Based Sensitivity Analysis ({INPUT_YEAR})"))
     
     if lang == "tr":
-        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk pozitif veya negatif yönlü varsayımsal bir değişimin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
+        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk bir iyileşmenin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
     else:
-        st.info("💡 **This module** automatically measures the impact of a hypothetical 10% positive or negative change in current variables on the overall score, identifying priority intervention areas for policymakers.")
+        st.info("💡 **This module** automatically measures the impact of a 10% improvement in current variables on the overall score, identifying priority intervention areas for policymakers.")
 
     adv_country = st.selectbox("Ülke Seç / Select Country", country_list, key="adv_country")
     
@@ -556,54 +555,73 @@ with t5:
         adv_inputs = get_raw_values(adv_country)
         current_score, _ = calculate_score_engine(adv_country, adv_inputs)
         impacts = []
+        
         for i, orig_name in enumerate(ui_input_names):
             val = adv_inputs[i]
             is_cost = orig_name.lower().strip() in cost_cols
             
-            # --- DÜZELTİLEN KISIM BAŞLANGICI ---
+            # --- STRATEJİK İYİLEŞTİRME MANTIĞI ---
             if is_cost:
                 new_val = val * 0.90
-                act = "AZALTILIRSA" if lang == "tr" else "DECREASED"
+                act = "İyileştirme (Azalış)" if lang == "tr" else "Improvement (Decrease)"
             else:
                 new_val = val * 1.10
-                act = "ARTIRILIRSA" if lang == "tr" else "INCREASED"
-            # --- DÜZELTİLEN KISIM BİTİŞİ ---
+                act = "İyileştirme (Artış)" if lang == "tr" else "Improvement (Increase)"
             
             temp = adv_inputs.copy()
             temp[i] = new_val
             new_score, _ = calculate_score_engine(adv_country, temp)
             gain = new_score - current_score
+            
             if not np.isnan(gain) and gain > 0.01:
                 impacts.append({"Feat": orig_name, "Gain": gain, "Act": act, "Val": new_val})
-                
+        
         impacts.sort(key=lambda x: x["Gain"], reverse=True)
         
-        if lang == "tr":
-            report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
-            if not impacts: report += "Değişkenlerde %10'luk değişim belirgin fark yaratmadı."
-            else:
+        if impacts:
+            # Tablo başlığı dile göre değişsin
+            tbl_title = f"#### 🎯 {TARGET_YEAR} Skoru İçin Stratejik Müdahale Tablosu" if lang=="tr" else f"#### 🎯 Strategic Intervention Table for {TARGET_YEAR} Score"
+            st.write(tbl_title)
+            
+            # --- TABLO HAZIRLAMA ---
+            table_rows = []
+            for item in impacts[:5]:
+                table_rows.append({
+                    "Değişken / Indicator": item['Feat'],
+                    "Senaryo / Scenario": f"%10 {item['Act']}",
+                    "Yeni Hedef / Target": round(item['Val'], 2),
+                    "Beklenen Katkı / Gain": f"+{round(item['Gain'], 3)} Puan/Points"
+                })
+            
+            df_table = pd.DataFrame(table_rows)
+            st.table(df_table) 
+            
+            # --- PDF VE METİN RAPORU ---
+            if lang == "tr":
+                report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
                 report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
-                for item in impacts[:5]: report += f"- **[{item['Feat']}]** -> %10 {item['Act']}\n  - Yeni Değer: {item['Val']:.2f} | Beklenen Artış: **+{item['Gain']:.3f} puan**\n"
-        else:
-            report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {current_score:.2f}\n\n---\n\n"
-            if not impacts: report += "A 10% change in variables did not make a significant difference."
+                for item in impacts[:5]:
+                    report += f"- **[{item['Feat']}]** -> %10 {item['Act']} (Yeni Değer: {item['Val']:.2f}) | Artış: **+{item['Gain']:.3f}**\n"
+                pdf_label = "📥 Raporu PDF Olarak İndir"
             else:
+                report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {current_score:.2f}\n\n---\n\n"
                 report += f"**PRIORITY AREAS FOR {TARGET_YEAR} SCORE:**\n\n"
-                for item in impacts[:5]: report += f"- **[{item['Feat']}]** -> 10% {item['Act']}\n  - New Value: {item['Val']:.2f} | Expected Gain: **+{item['Gain']:.3f} points**\n"
-        
-        st.markdown(report)
-        
-        # Generate and provide PDF download option
-        clean_report = report.replace("**", "") 
-        pdf_bytes = generate_pdf_report("Duyarlilik Analizi Raporu" if lang=="tr" else "Sensitivity Analysis Report", clean_report)
-        st.download_button(
-            label="📥 PDF Olarak İndir / Download PDF",
-            data=pdf_bytes,
-            file_name=f"Duyarlilik_Analizi_{adv_country}.pdf",
-            mime="application/pdf",
-            key="dl_t5_new"
-        )
-
+                for item in impacts[:5]:
+                    report += f"- **[{item['Feat']}]** -> 10% {item['Act']} (New Value: {item['Val']:.2f}) | Gain: **+{item['Gain']:.3f}**\n"
+                pdf_label = "📥 Download Report as PDF"
+            
+            clean_report = report.replace("**", "") 
+            pdf_bytes = generate_pdf_report("Sensitivity Analysis Report", clean_report)
+            st.download_button(
+                label=pdf_label,
+                data=pdf_bytes,
+                file_name=f"Duyarlilik_{adv_country}.pdf",
+                mime="application/pdf",
+                key="dl_t5_v2"
+            )
+        else:
+            no_impact_msg = "Belirgin bir iyileşme alanı tespit edilemedi." if lang=="tr" else "No significant improvement area identified."
+            st.warning(no_impact_msg)
 # ============================================================
 # ============================================================
 # TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE  SÖZLÜK)
