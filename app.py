@@ -408,7 +408,7 @@ with t2:
         # TAB 2 GÜNCELLEMESİ: Figür boyutu ve fontlar küçültüldü
         fig_height = max(3.0, len(lbls) * 0.15) 
         fig, ax = plt.subplots(figsize=(5, fig_height))
-        
+        y = np.arange(len(lbls))
         # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları daha derli toplu yapıldı
         ax.barh(y - 0.15, z1, 0.3, label=f"{c1}", color="#0f766e", alpha=0.9)
         ax.barh(y + 0.15, z2, 0.3, label=f"{c2}", color="#64748b", alpha=0.9)
