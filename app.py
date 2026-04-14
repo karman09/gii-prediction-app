@@ -230,7 +230,7 @@ if lang == "tr":
 else:
     st.markdown("<h1 class='main-title'>GII 2025 Forecast & Decision Support System</h1>", unsafe_allow_html=True)
 
-with st.expander("Metodoloji Hakkında / About Methodology" if lang=="tr" else "About Methodology"):
+with st.expander("Metodoloji Hakkında" if lang=="tr" else "About Methodology"):
     if lang == "tr":
         st.markdown("""
         **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
@@ -272,7 +272,7 @@ with t1:
     ))
 
     # Country Selection
-    sim_country = st.selectbox("Simülasyon İçin Ülke Seç / Select Country", country_list, key="sim_country_box")
+    sim_country = st.selectbox("Simülasyon İçin Ülke Seç" if lang=="tr" else "Select Country", country_list, key="sim_country_box")
     
     # Retrieve 2023 raw data for the selected country
     base_raw_values = get_raw_values(sim_country)
@@ -333,7 +333,7 @@ with t1:
                 f"The changes made result in a {abs(diff):.2f} point {direction} in the score."
             ))
         
-        if st.button("Değerleri Sıfırla / Reset Values" if lang=="tr" else "Reset Values"):
+        if st.button("Değerleri Sıfırla" if lang=="tr" else "Reset Values"):
             # Clear all session state input keys linked to the current simulated country
             for key in list(st.session_state.keys()):
                 if key.startswith(f"input_{sim_country}_"):
@@ -343,29 +343,36 @@ with t1:
             st.rerun()
 
     # Generate comparative data evaluation table within expander
-    with st.expander("Değişim Detaylarını Gör / See Change Details"):
+    with st.expander("Değişim Detaylarını Gör" if lang=="tr" else "See Change Details"):
+        col_var = "Değişken" if lang=="tr" else "Variable"
+        col_diff = "Fark" if lang=="tr" else "Diff"
+        
         comparison_df = pd.DataFrame({
-            "Değişken / Variable": ui_input_names,
+            col_var: ui_input_names,
             "2023 Baz (Raw)": base_raw_values,
             "Simülasyon (Raw)": new_sim_values
         })
-        comparison_df["Fark / Diff"] = comparison_df["Simülasyon (Raw)"] - comparison_df["2023 Baz (Raw)"]
-        changed_df = comparison_df[comparison_df["Fark / Diff"] != 0]
+        comparison_df[col_diff] = comparison_df["Simülasyon (Raw)"] - comparison_df["2023 Baz (Raw)"]
+        changed_df = comparison_df[comparison_df[col_diff] != 0]
         st.table(changed_df)
         
         # Generate and provide PDF download option
         pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
-        pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
+        
+        if lang == "tr":
+            pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
+        else:
+            pdf_text = f"Country: {sim_country}\nOriginal Forecast: {base_pred:.2f}\nSimulated Score: {sim_pred:.2f}\nDiff: {diff:.2f} Points\n\n--- Changed Variables ---\n"
         
         if not changed_df.empty:
             for index, row in changed_df.iterrows():
-                pdf_text += f"{row['Değişken / Variable']}: {row['2023 Baz (Raw)']:.2f} -> {row['Simülasyon (Raw)']:.2f} (Fark: {row['Fark / Diff']:.2f})\n"
+                pdf_text += f"{row[col_var]}: {row['2023 Baz (Raw)']:.2f} -> {row['Simülasyon (Raw)']:.2f} ({col_diff}: {row[col_diff]:.2f})\n"
         else:
-            pdf_text += "Herhangi bir degisiklik yapilmamistir."
+            pdf_text += "Herhangi bir degisiklik yapilmamistir." if lang=="tr" else "No changes were made."
 
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text)
         st.download_button(
-            label="📥 Senaryo Raporunu PDF Olarak İndir / Download Scenario PDF",
+            label="📥 Senaryo Raporunu PDF Olarak İndir" if lang=="tr" else "📥 Download Scenario PDF",
             data=pdf_bytes,
             file_name=f"Senaryo_{sim_country}.pdf",
             mime="application/pdf",
@@ -383,10 +390,10 @@ with t2:
         st.info("💡 **This module** allows you to compare the performance of two countries across the 24 indicators used in the model by visualizing them through standard Z-scores. ")
 
     c1_col, c2_col = st.columns(2)
-    with c1_col: c1 = st.selectbox("Ülke A / Country A", country_list, key="bench_c1")
-    with c2_col: c2 = st.selectbox("Ülke B / Country B", country_list, key="bench_c2", index=1)
+    with c1_col: c1 = st.selectbox("Ülke A" if lang=="tr" else "Country A", country_list, key="bench_c1")
+    with c2_col: c2 = st.selectbox("Ülke B" if lang=="tr" else "Country B", country_list, key="bench_c2", index=1)
     
-    if st.button("Grafiği Oluştur / Generate Chart", type="primary", key="bench_btn"):
+    if st.button("Grafiği Oluştur" if lang=="tr" else "Generate Chart", type="primary", key="bench_btn"):
         v1, v2 = get_raw_values(c1), get_raw_values(c2)
         s1, _ = calculate_score_engine(c1, v1)
         s2, _ = calculate_score_engine(c2, v2)
@@ -411,10 +418,10 @@ with t2:
         
         # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
-        pdf_text = f"{c1} (Tahmin/Forecast: {s1:.2f}) VS {c2} (Tahmin/Forecast: {s2:.2f})"
+        pdf_text = f"{c1} (Tahmin: {s1:.2f}) VS {c2} (Tahmin: {s2:.2f})" if lang=="tr" else f"{c1} (Forecast: {s1:.2f}) VS {c2} (Forecast: {s2:.2f})"
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
         st.download_button(
-            label="📥 PDF Olarak İndir / Download PDF",
+            label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
             data=pdf_bytes,
             file_name=f"Karsilastirma_{c1}_{c2}.pdf",
             mime="application/pdf",
@@ -429,10 +436,10 @@ with t3:
     st.info("💡 " + ("Bu modül, hedef skor ile mevcut tahmin arasındaki farkı analiz eder; SHAP grafikleri yardımıyla modele etki eden en güçlü yönleri ve iyileştirmeye açık gelişim alanlarını listeler." if lang=="tr" else "This module analyzes the difference between the target score and the current prediction; using SHAP plots, it highlights the strongest driving factors and areas for improvement."))
 
     shap_c, target_c = st.columns([2,1])
-    with shap_c: d4 = st.selectbox("Ülke Seç / Select Country", country_list, key="shap_c")
+    with shap_c: d4 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="shap_c")
     with target_c: target_score = st.number_input("Hedeflenen GII Skoru" if lang=="tr" else "Targeted Score", value=0.0)
     
-    if st.button("Analizi Başlat / Start Analysis", type="primary", key="shap_btn"):
+    if st.button("Analizi Başlat" if lang=="tr" else "Start Analysis", type="primary", key="shap_btn"):
         raw_vals_current = get_raw_values(d4)
         pred, model_input = calculate_score_engine(d4, raw_vals_current)
         actual_val_str = get_actual_gii(d4, lang)
@@ -475,7 +482,7 @@ with t3:
         pdf_text = (target_text + "\n" + shap_text).replace("**", "")
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_shap)
         st.download_button(
-            label="📥 PDF Olarak İndir / Download PDF",
+            label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
             data=pdf_bytes,
             file_name=f"SHAP_Analizi_{d4}.pdf",
             mime="application/pdf",
@@ -496,10 +503,10 @@ with t4:
     # ------------------------------------------
 
     d5_c, f5_c = st.columns(2)
-    with d5_c: d5 = st.selectbox("Ülke Seç / Select Country", country_list, key="trend_c")
-    with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken / Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
+    with d5_c: d5 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="trend_c")
+    with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken" if lang=="tr" else "Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
     
-    if st.button("Trendi Çiz / Plot Trend", type="primary", key="trend_btn"):
+    if st.button("Trendi Çiz" if lang=="tr" else "Plot Trend", type="primary", key="trend_btn"):
         country_data = df_raw[df_raw[country_col] == d5].copy().sort_values(by=year_col)
         actual_col = None
         if feat_dropdown in ["GII Skoru (Gerçekleşen)", "GII Score (Actual)"]:
@@ -525,10 +532,10 @@ with t4:
             
             # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
-            pdf_text = f"Ulke/Country: {d5}\nIncelenen Degisken/Variable: {feat_dropdown}"
+            pdf_text = f"Ulke: {d5}\nIncelenen Degisken: {feat_dropdown}" if lang=="tr" else f"Country: {d5}\nVariable: {feat_dropdown}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
             st.download_button(
-                label="📥 PDF Olarak İndir / Download PDF",
+                label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
                 data=pdf_bytes,
                 file_name=f"Trend_Analizi_{d5}.pdf",
                 mime="application/pdf",
@@ -549,9 +556,9 @@ with t5:
     else:
         st.info("💡 **This module** automatically measures the impact of a 10% improvement in current variables on the overall score, identifying priority intervention areas for policymakers.")
 
-    adv_country = st.selectbox("Ülke Seç / Select Country", country_list, key="adv_country")
+    adv_country = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="adv_country")
     
-    if st.button("Analizi Başlat / Start Analysis", type="primary", key="adv_btn"):
+    if st.button("Analizi Başlat" if lang=="tr" else "Start Analysis", type="primary", key="adv_btn"):
         adv_inputs = get_raw_values(adv_country)
         current_score, _ = calculate_score_engine(adv_country, adv_inputs)
         impacts = []
@@ -584,13 +591,18 @@ with t5:
             st.write(tbl_title)
             
             # --- TABLO HAZIRLAMA ---
+            col_ind = "Değişken" if lang=="tr" else "Indicator"
+            col_scen = "Senaryo" if lang=="tr" else "Scenario"
+            col_tar = "Yeni Hedef" if lang=="tr" else "Target"
+            col_gain = "Beklenen Katkı" if lang=="tr" else "Gain"
+            
             table_rows = []
             for item in impacts[:5]:
                 table_rows.append({
-                    "Değişken / Indicator": item['Feat'],
-                    "Senaryo / Scenario": f"%10 {item['Act']}",
-                    "Yeni Hedef / Target": round(item['Val'], 2),
-                    "Beklenen Katkı / Gain": f"+{round(item['Gain'], 3)} Puan/Points"
+                    col_ind: item['Feat'],
+                    col_scen: f"%10 {item['Act']}" if lang=="tr" else f"10% {item['Act']}",
+                    col_tar: round(item['Val'], 2),
+                    col_gain: f"+{round(item['Gain'], 3)} Puan" if lang=="tr" else f"+{round(item['Gain'], 3)} Points"
                 })
             
             df_table = pd.DataFrame(table_rows)
@@ -622,6 +634,7 @@ with t5:
         else:
             no_impact_msg = "Belirgin bir iyileşme alanı tespit edilemedi." if lang=="tr" else "No significant improvement area identified."
             st.warning(no_impact_msg)
+
 # ============================================================
 # ============================================================
 # TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE  SÖZLÜK)
@@ -629,8 +642,13 @@ with t5:
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
     
-    if st.button("Harita ve Sıralamayı Yükle / Load Map & Leaderboard", key="load_map_btn"):
+    if st.button("Harita ve Sıralamayı Yükle" if lang=="tr" else "Load Map & Leaderboard", key="load_map_btn"):
         with st.spinner("Harita ve Sıralama Yükleniyor..."):
+            
+            col_country = "Ülke" if lang=="tr" else "Country"
+            col_forecast = "Tahmin" if lang=="tr" else "Forecast"
+            col_actual = "Gerçekleşen" if lang=="tr" else "Actual"
+            
             map_data = []
             for c in country_list:
                 p, _ = calculate_score_engine(c, get_raw_values(c))
@@ -641,9 +659,9 @@ with t6:
                     act_val = np.nan
                     
                 map_data.append({
-                    "Ülke / Country": c, 
-                    "Tahmin / Forecast": p, 
-                    "Gerçekleşen / Actual": act_val
+                    col_country: c, 
+                    col_forecast: p, 
+                    col_actual: act_val
                 })
             
             df_map = pd.DataFrame(map_data)
@@ -709,34 +727,34 @@ with t6:
             }
             
             # Harita için isimleri tek bir hamlede eşleştir
-            df_map["Harita_Icin_Ulke"] = df_map["Ülke / Country"].replace(full_country_mapping)
+            df_map["Harita_Icin_Ulke"] = df_map[col_country].replace(full_country_mapping)
             
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
-                st.write("**Performans Sıralaması / Performance Ranking**" if lang=="tr" else "**Performance Ranking**")
+                st.write("**Performans Sıralaması**" if lang=="tr" else "**Performance Ranking**")
                 st.dataframe(
-                    df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by="Tahmin / Forecast", ascending=False).reset_index(drop=True),
+                    df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True),
                     use_container_width=True
                 )
             
             with col_m2:
-                st.write("**Mekansal Dağılım Haritası / Spatial Distribution Map**" if lang=="tr" else "**Spatial Distribution Map**")
+                st.write("**Mekansal Dağılım Haritası**" if lang=="tr" else "**Spatial Distribution Map**")
                 
                 fig_map = px.choropleth(
                     df_map, 
                     locations="Harita_Icin_Ulke", 
                     locationmode="country names",
-                    color="Tahmin / Forecast",
-                    hover_name="Ülke / Country", 
+                    color=col_forecast,
+                    hover_name=col_country, 
                     hover_data={
                         "Harita_Icin_Ulke": False, 
-                        "Ülke / Country": False, 
-                        "Tahmin / Forecast": ":.2f", 
-                        "Gerçekleşen / Actual": ":.2f"
+                        col_country: False, 
+                        col_forecast: ":.2f", 
+                        col_actual: ":.2f"
                     },
                     color_continuous_scale="Viridis",
-                    title="GII 2025 Tahmin Dağılımı / Forecast Distribution"
+                    title="GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
                 )
                 
     
@@ -762,21 +780,21 @@ with t7:
         "This module allows you to examine the underlying raw dataset in detail and discover the correlations between critical variables."
     ))
     
-    st.write("**Ham Veri Tablosu / Raw Data Table**" if lang=="tr" else "**Raw Data Table**")
+    st.write("**Ham Veri Tablosu**" if lang=="tr" else "**Raw Data Table**")
     st.dataframe(latest_data_raw[ui_input_names], use_container_width=True)
     
     st.write("---")
-    st.write("**Değişkenler Arası Korelasyon / Correlation Matrix**" if lang=="tr" else "**Correlation Matrix**")
+    st.write("**Değişkenler Arası Korelasyon**" if lang=="tr" else "**Correlation Matrix**")
     
-    if st.button("Korelasyon Matrisini Çiz / Plot Correlation", key="corr_btn"):
-        with st.spinner("Isı Haritası Oluşturuluyor... / Generating Heatmap..." if lang=="tr" else "Generating Heatmap..."):
+    if st.button("Korelasyon Matrisini Çiz" if lang=="tr" else "Plot Correlation", key="corr_btn"):
+        with st.spinner("Isı Haritası Oluşturuluyor..." if lang=="tr" else "Generating Heatmap..."):
             corr_matrix = latest_data_raw[ui_input_names].corr()
             fig_corr = px.imshow(
                 corr_matrix, 
                 text_auto=False, 
                 aspect="auto", 
                 color_continuous_scale="RdBu_r",
-                title="Değişken Korelasyon Isı Haritası / Variable Correlation Heatmap"
+                title="Değişken Korelasyon Isı Haritası" if lang=="tr" else "Variable Correlation Heatmap"
             )
             fig_corr.update_layout(margin=dict(l=0, r=0, t=30, b=0))
             st.plotly_chart(fig_corr, use_container_width=True)
@@ -786,11 +804,12 @@ with t7:
 # ============================================================
 st.markdown("---")
 
+ds_text = "Veri Kaynağı" if lang == "tr" else "Data Source"
 footer_html = f"""
 <div style='text-align: center; color: gray; font-size: 0.9em; line-height: 1.5;'>
     <strong>{TARGET_YEAR} Strategic Decision Support System</strong><br>
     <span style='font-size: 0.85em;'>
-        Veri Kaynağı / Data Source: 
+        {ds_text}: 
         <a href='https://www.wipo.int/en/web/global-innovation-index' target='_blank' style='color: #2874A6; text-decoration: none; font-weight: 600;'>
             Global Innovation Index (WIPO)
         </a>
