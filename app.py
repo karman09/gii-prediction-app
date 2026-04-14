@@ -429,7 +429,7 @@ with t2:
         ax.xaxis.grid(True, linestyle='--', alpha=0.5, color='#cccccc')
         ax.set_axisbelow(True)
         
-        ax.legend(fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
+        ax.legend(fontsize=4, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
         
         ax.axvline(0, color='black', linewidth=0.8)
         plt.tight_layout()
