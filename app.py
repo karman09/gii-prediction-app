@@ -405,12 +405,12 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        # TAB 2 GÜNCELLEMESİ: Daha yüksek çözünürlüklü, zarif ve ince hatlı tasarım
+        # TAB 2 UPDATE: High-resolution, refined design
         fig_height = max(4.0, len(lbls) * 0.20) 
         fig, ax = plt.subplots(figsize=(6, fig_height), dpi=300)
         y = np.arange(len(lbls))
         
-        # Çubuk kalınlıkları daha zarif ve arayüz rengiyle uyumlu hale getirildi
+        # Adjusted bar widths for UI consistency
         bar_width = 0.35
         ax.barh(y - bar_width/2, z1, bar_width, label=f"{c1}", color="#1A5276", edgecolor='none', alpha=0.9)
         ax.barh(y + bar_width/2, z2, bar_width, label=f"{c2}", color="#5DADE2", edgecolor='none', alpha=0.9)
@@ -419,13 +419,13 @@ with t2:
         ax.set_yticklabels(lbls, fontsize=6, color="#333333") 
         ax.tick_params(axis='x', labelsize=8, colors="#333333")
         
-        # Kaba görünen çerçeve çizgilerini (spines) kaldırma
+        # Remove chart spines
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color('#dddddd')
         ax.spines['bottom'].set_color('#dddddd')
         
-        # Arka plana okumayı kolaylaştıran zarif ızgara çizgileri (grid) ekleme
+        # Add subtle grid lines for readability
         ax.xaxis.grid(True, linestyle='--', alpha=0.5, color='#cccccc')
         ax.set_axisbelow(True)
         
@@ -497,8 +497,7 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin orantısını ve çözünürlüğünü iyileştirme
-            # DPI değeri ile kalite artırıldı, sınırlar (spines) kaldırılarak ferahlık sağlandı
+            # TAB 3 UPDATE: Optimize SHAP plot proportions and resolution
             fig_shap = plt.figure(figsize=(6, 4.5), dpi=300)
             
             with plt.rc_context({
@@ -511,10 +510,10 @@ with t3:
                 'axes.spines.left': False,
                 'axes.spines.bottom': False
             }):
-                # Karmaşayı önlemek için gösterilecek maksimum detay 8'e düşürüldü
+                # Limit max_display to 8 to prevent visual clutter
                 shap.plots.waterfall(shap_values[0], max_display=8, show=False)
                 plt.tight_layout()
-                # use_container_width=True ile Streamlit paneline tam oturması sağlandı
+                # Ensure the plot fits the Streamlit container
                 st.pyplot(fig_shap, use_container_width=True)
             
         # Generate and provide PDF download option
@@ -607,7 +606,7 @@ with t5:
             val = adv_inputs[i]
             is_cost = orig_name.lower().strip() in cost_cols
             
-            # --- STRATEJİK İYİLEŞTİRME MANTIĞI ---
+            # --- STRATEGIC IMPROVEMENT LOGIC ---
             if is_cost:
                 new_val = val * 0.90
                 act = "İyileştirme (Azalış)" if lang == "tr" else "Improvement (Decrease)"
@@ -626,11 +625,11 @@ with t5:
         impacts.sort(key=lambda x: x["Gain"], reverse=True)
         
         if impacts:
-            # Tablo başlığı dile göre değişsin
+            # Set dynamic table title based on language
             tbl_title = f"#### {TARGET_YEAR} Skoru İçin Stratejik Müdahale Tablosu" if lang=="tr" else f"#### Strategic Intervention Table for {TARGET_YEAR} Score"
             st.write(tbl_title)
             
-            # --- TABLO HAZIRLAMA ---
+            # --- TABLE PREPARATION ---
             col_ind = "Değişken" if lang=="tr" else "Indicator"
             col_scen = "Senaryo" if lang=="tr" else "Scenario"
             col_tar = "Yeni Hedef" if lang=="tr" else "Target"
@@ -648,7 +647,7 @@ with t5:
             df_table = pd.DataFrame(table_rows)
             st.table(df_table) 
             
-            # --- PDF VE METİN RAPORU ---
+            # --- PDF AND TEXT REPORT ---
             if lang == "tr":
                 report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
                 report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
@@ -677,7 +676,7 @@ with t5:
 
 # ============================================================
 # ============================================================
-# TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE  SÖZLÜK)
+# TAB 6: GLOBAL LEADERBOARD & MAP (125+ COUNTRY DICTIONARY)
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
@@ -706,7 +705,7 @@ with t6:
             
             df_map = pd.DataFrame(map_data)
             
-            # GII Verisindeki Tüm Olası Ülkeler İçin Plotly Standart İsim Eşleştirmesi
+            # Plotly standard name mapping for all possible countries in the GII Data
             full_country_mapping = {
                 "Albania": "Albania", "Algeria": "Algeria", "Angola": "Angola", "Argentina": "Argentina",
                 "Armenia": "Armenia", "Australia": "Australia", "Austria": "Austria", "Azerbaijan": "Azerbaijan",
@@ -766,7 +765,7 @@ with t6:
                 "Yemen": "Yemen", "Zambia": "Zambia", "Zimbabwe": "Zimbabwe"
             }
             
-            # Harita için isimleri tek bir hamlede eşleştir
+            # Apply mapping to map data
             df_map["Harita_Icin_Ulke"] = df_map[col_country].replace(full_country_mapping)
             
             col_m1, col_m2 = st.columns([1, 2])
