@@ -559,7 +559,7 @@ with t4:
             
             # --- CHART UPDATES HERE ---
             # Adjusted the chart size to be more proportional:
-            fig_trend, ax = plt.subplots(figsize=(4, 2.5)) 
+            fig_trend, ax = plt.subplots(figsize=(6, 3.5), dpi=150) 
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
@@ -568,7 +568,7 @@ with t4:
             ax.set_xticks(x) 
             # ------------------------------------
             
-            st.pyplot(fig_trend)
+            st.pyplot(fig_trend, use_container_width=False)
             
             # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
