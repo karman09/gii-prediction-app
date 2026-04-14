@@ -405,31 +405,33 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        # TAB 2 GÜNCELLEMESİ: Figür boyutu, fontlar ve görünüm profesyonelleştirildi
-        fig_height = max(2.5, len(lbls) * 0.12) 
-        fig, ax = plt.subplots(figsize=(4.0, fig_height), dpi=120)
+        # TAB 2 GÜNCELLEMESİ: Daha yüksek çözünürlüklü, zarif ve ince hatlı tasarım
+        fig_height = max(4.0, len(lbls) * 0.20) 
+        fig, ax = plt.subplots(figsize=(6, fig_height), dpi=150)
         y = np.arange(len(lbls))
         
-        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları daha ince ve zarif
-        ax.barh(y - 0.12, z1, 0.22, label=f"{c1}", color="#0f766e", alpha=0.85)
-        ax.barh(y + 0.12, z2, 0.22, label=f"{c2}", color="#64748b", alpha=0.85)
+        # Çubuk kalınlıkları daha zarif ve arayüz rengiyle uyumlu hale getirildi
+        bar_width = 0.35
+        ax.barh(y - bar_width/2, z1, bar_width, label=f"{c1}", color="#1A5276", edgecolor='none', alpha=0.9)
+        ax.barh(y + bar_width/2, z2, bar_width, label=f"{c2}", color="#5DADE2", edgecolor='none', alpha=0.9)
         
         ax.set_yticks(y)
-        ax.set_yticklabels(lbls, fontsize=5.5) # Font küçültüldü
-        ax.tick_params(axis='x', labelsize=5.5) # X ekseni font küçültüldü
+        ax.set_yticklabels(lbls, fontsize=8, color="#333333") 
+        ax.tick_params(axis='x', labelsize=8, colors="#333333")
         
-        # Lejant çerçevesi kaldırıldı ve font küçültüldü
-        ax.legend(fontsize=5.5, frameon=False) 
-        
-        # Gereksiz kenarlıkları kaldırma ve ızgara (grid) ekleme
+        # Kaba görünen çerçeve çizgilerini (spines) kaldırma
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color('#dddddd')
         ax.spines['bottom'].set_color('#dddddd')
-        ax.xaxis.grid(True, linestyle='--', alpha=0.6, color='#eeeeee')
+        
+        # Arka plana okumayı kolaylaştıran zarif ızgara çizgileri (grid) ekleme
+        ax.xaxis.grid(True, linestyle='--', alpha=0.5, color='#cccccc')
         ax.set_axisbelow(True)
         
-        ax.axvline(0, color='black', linewidth=0.8, linestyle='--')
+        ax.legend(fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
+        
+        ax.axvline(0, color='black', linewidth=0.8)
         plt.tight_layout()
         st.pyplot(fig)
         
@@ -461,7 +463,6 @@ with t3:
         pred, model_input = calculate_score_engine(d4, raw_vals_current)
         actual_val_str = get_actual_gii(d4, lang)
         
-        # TAB 3 GÜNCELLEMESİ: Dil seçimine göre dinamik metin (İngilizce kısmı eksikti)
         if lang == "tr":
             target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {pred:.2f}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_val_str}\n\n---\n"
             if target_score > 0:
@@ -496,14 +497,25 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            # TAB 3 GÜNCELLEMESİ: Figür boyutu iyice küçültüldü ve dpi ile keskinleştirildi
-            fig_shap = plt.figure(figsize=(4.0, 2.8), dpi=120)
+            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin orantısını ve çözünürlüğünü iyileştirme
+            # DPI değeri ile kalite artırıldı, sınırlar (spines) kaldırılarak ferahlık sağlandı
+            fig_shap = plt.figure(figsize=(6, 4.5), dpi=150)
             
-            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini iyice küçültmek ve temiz görünüm için kenarlıkları gizlemek
-            with plt.rc_context({'font.size': 5.5, 'axes.labelsize': 5.5, 'xtick.labelsize': 5.5, 'ytick.labelsize': 5.5, 'axes.spines.top': False, 'axes.spines.right': False}):
-                shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+            with plt.rc_context({
+                'font.size': 8, 
+                'axes.labelsize': 8, 
+                'xtick.labelsize': 8, 
+                'ytick.labelsize': 8,
+                'axes.spines.top': False,
+                'axes.spines.right': False,
+                'axes.spines.left': False,
+                'axes.spines.bottom': False
+            }):
+                # Karmaşayı önlemek için gösterilecek maksimum detay 8'e düşürüldü
+                shap.plots.waterfall(shap_values[0], max_display=8, show=False)
                 plt.tight_layout()
-                st.pyplot(fig_shap)
+                # use_container_width=True ile Streamlit paneline tam oturması sağlandı
+                st.pyplot(fig_shap, use_container_width=True)
             
         # Generate and provide PDF download option
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
