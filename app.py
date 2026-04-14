@@ -405,20 +405,31 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        # TAB 2 GÜNCELLEMESİ: Figür boyutu ve fontlar küçültüldü
-        fig_height = max(3.0, len(lbls) * 0.15) 
-        fig, ax = plt.subplots(figsize=(5, fig_height))
+        # TAB 2 GÜNCELLEMESİ: Figür boyutu, fontlar ve görünüm profesyonelleştirildi
+        fig_height = max(2.5, len(lbls) * 0.12) 
+        fig, ax = plt.subplots(figsize=(4.0, fig_height), dpi=120)
         y = np.arange(len(lbls))
-        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları daha derli toplu yapıldı
-        ax.barh(y - 0.15, z1, 0.3, label=f"{c1}", color="#0f766e", alpha=0.9)
-        ax.barh(y + 0.15, z2, 0.3, label=f"{c2}", color="#64748b", alpha=0.9)
+        
+        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları daha ince ve zarif
+        ax.barh(y - 0.12, z1, 0.22, label=f"{c1}", color="#0f766e", alpha=0.85)
+        ax.barh(y + 0.12, z2, 0.22, label=f"{c2}", color="#64748b", alpha=0.85)
         
         ax.set_yticks(y)
-        ax.set_yticklabels(lbls, fontsize=6) # Font küçültüldü
-        ax.tick_params(axis='x', labelsize=6) # X ekseni font küçültüldü
-        ax.legend(fontsize=6) # Lejant fontu küçültüldü
+        ax.set_yticklabels(lbls, fontsize=5.5) # Font küçültüldü
+        ax.tick_params(axis='x', labelsize=5.5) # X ekseni font küçültüldü
         
-        ax.axvline(0, color='black', linewidth=1, linestyle='--')
+        # Lejant çerçevesi kaldırıldı ve font küçültüldü
+        ax.legend(fontsize=5.5, frameon=False) 
+        
+        # Gereksiz kenarlıkları kaldırma ve ızgara (grid) ekleme
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#dddddd')
+        ax.spines['bottom'].set_color('#dddddd')
+        ax.xaxis.grid(True, linestyle='--', alpha=0.6, color='#eeeeee')
+        ax.set_axisbelow(True)
+        
+        ax.axvline(0, color='black', linewidth=0.8, linestyle='--')
         plt.tight_layout()
         st.pyplot(fig)
         
@@ -485,11 +496,11 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            # TAB 3 GÜNCELLEMESİ: Figür boyutu iyice küçültüldü
-            fig_shap = plt.figure(figsize=(5, 3.5))
+            # TAB 3 GÜNCELLEMESİ: Figür boyutu iyice küçültüldü ve dpi ile keskinleştirildi
+            fig_shap = plt.figure(figsize=(4.0, 2.8), dpi=120)
             
-            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini küçültmek için geçici konfigürasyon fontları küçültüldü
-            with plt.rc_context({'font.size': 6, 'axes.labelsize': 6, 'xtick.labelsize': 6, 'ytick.labelsize': 6}):
+            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini iyice küçültmek ve temiz görünüm için kenarlıkları gizlemek
+            with plt.rc_context({'font.size': 5.5, 'axes.labelsize': 5.5, 'xtick.labelsize': 5.5, 'ytick.labelsize': 5.5, 'axes.spines.top': False, 'axes.spines.right': False}):
                 shap.plots.waterfall(shap_values[0], max_display=10, show=False)
                 plt.tight_layout()
                 st.pyplot(fig_shap)
