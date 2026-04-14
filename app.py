@@ -405,13 +405,20 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        fig_height = max(4, len(lbls) * 0.28) 
-        fig, ax = plt.subplots(figsize=(7, fig_height))
+        # TAB 2 GÜNCELLEMESİ: Figür boyutu küçültüldü, fontlar ufaltıldı
+        fig_height = max(3.5, len(lbls) * 0.20) 
+        fig, ax = plt.subplots(figsize=(6, fig_height))
         y = np.arange(len(lbls))
-        ax.barh(y - 0.175, z1, 0.35, label=f"{c1}", color="#0f766e", alpha=0.9)
-        ax.barh(y + 0.175, z2, 0.35, label=f"{c2}", color="#64748b", alpha=0.9)
-        ax.set_yticks(y); ax.set_yticklabels(lbls, fontsize=10)
-        ax.legend()
+        
+        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları ve boşlukları daha derli toplu yapıldı
+        ax.barh(y - 0.15, z1, 0.3, label=f"{c1}", color="#0f766e", alpha=0.9)
+        ax.barh(y + 0.15, z2, 0.3, label=f"{c2}", color="#64748b", alpha=0.9)
+        
+        ax.set_yticks(y)
+        ax.set_yticklabels(lbls, fontsize=8) # Font küçültüldü
+        ax.tick_params(axis='x', labelsize=8) # X ekseni font küçültüldü
+        ax.legend(fontsize=8) # Lejant fontu küçültüldü
+        
         ax.axvline(0, color='black', linewidth=1, linestyle='--')
         plt.tight_layout()
         st.pyplot(fig)
@@ -472,10 +479,14 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            fig_shap = plt.figure(figsize=(9, 6))
-            shap.plots.waterfall(shap_values[0], max_display=10, show=False)
-            plt.tight_layout()
-            st.pyplot(fig_shap)
+            # TAB 3 GÜNCELLEMESİ: Figür boyutu küçültüldü (9, 6 yerine 6, 4)
+            fig_shap = plt.figure(figsize=(6, 4))
+            
+            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini küçültmek için geçici konfigürasyon eklendi
+            with plt.rc_context({'font.size': 8, 'axes.labelsize': 8, 'xtick.labelsize': 8, 'ytick.labelsize': 8}):
+                shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+                plt.tight_layout()
+                st.pyplot(fig_shap)
             
         # Generate and provide PDF download option
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
