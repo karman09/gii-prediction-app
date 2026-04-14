@@ -404,42 +404,36 @@ with t2:
             lbls.append(f + " (-)" if f.lower().strip() in cost_cols else f)
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
-
-        # ── TAB 2: Profesyonel grafik ──────────────────────────────────────────
-        fig_height = max(5.0, len(lbls) * 0.38)
-        fig, ax = plt.subplots(figsize=(8, fig_height), facecolor="white")
+            
+        # TAB 2 GÜNCELLEMESİ: Daha yüksek çözünürlüklü, zarif ve ince hatlı tasarım
+        fig_height = max(4.0, len(lbls) * 0.20) 
+        fig, ax = plt.subplots(figsize=(6, fig_height), dpi=150)
         y = np.arange(len(lbls))
-        bar_h = 0.38
-
-        ax.barh(y - bar_h / 2, z1, bar_h, label=f"{c1}",
-                color="#0f766e", alpha=0.85, edgecolor="white", linewidth=0.4)
-        ax.barh(y + bar_h / 2, z2, bar_h, label=f"{c2}",
-                color="#475569", alpha=0.85, edgecolor="white", linewidth=0.4)
-
+        
+        # Çubuk kalınlıkları daha zarif ve arayüz rengiyle uyumlu hale getirildi
+        bar_width = 0.35
+        ax.barh(y - bar_width/2, z1, bar_width, label=f"{c1}", color="#1A5276", edgecolor='none', alpha=0.9)
+        ax.barh(y + bar_width/2, z2, bar_width, label=f"{c2}", color="#5DADE2", edgecolor='none', alpha=0.9)
+        
         ax.set_yticks(y)
-        ax.set_yticklabels(lbls, fontsize=7.5, color="#1e293b")
-        ax.tick_params(axis="x", labelsize=7.5, colors="#475569")
-        ax.set_xlabel("Z-Score", fontsize=8.5, color="#334155", labelpad=6)
-        ax.set_title(
-            ("Karşılaştırmalı Z-Skor Profili" if lang == "tr" else "Comparative Z-Score Profile")
-            + f"\n{c1}  vs  {c2}",
-            fontsize=9.5, fontweight="bold", color="#0f172a", pad=10
-        )
-
-        ax.axvline(0, color="#94a3b8", linewidth=0.8, linestyle="--")
-        ax.legend(fontsize=8, framealpha=0.9, edgecolor="#e2e8f0", fancybox=True)
-
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color("#e2e8f0")
-        ax.spines["bottom"].set_color("#e2e8f0")
-        ax.grid(axis="x", linestyle="--", alpha=0.35, color="#cbd5e1")
-        ax.set_facecolor("#f8fafc")
-        fig.patch.set_facecolor("white")
-
-        plt.tight_layout(pad=1.5)
+        ax.set_yticklabels(lbls, fontsize=8, color="#333333") 
+        ax.tick_params(axis='x', labelsize=8, colors="#333333")
+        
+        # Kaba görünen çerçeve çizgilerini (spines) kaldırma
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#dddddd')
+        ax.spines['bottom'].set_color('#dddddd')
+        
+        # Arka plana okumayı kolaylaştıran zarif ızgara çizgileri (grid) ekleme
+        ax.xaxis.grid(True, linestyle='--', alpha=0.5, color='#cccccc')
+        ax.set_axisbelow(True)
+        
+        ax.legend(fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
+        
+        ax.axvline(0, color='black', linewidth=0.8)
+        plt.tight_layout()
         st.pyplot(fig)
-        # ──────────────────────────────────────────────────────────────────────
         
         # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
@@ -503,21 +497,25 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            # ── TAB 3: Profesyonel SHAP grafiği ───────────────────────────────
-            fig_shap = plt.figure(figsize=(7, 4.5), facecolor="white")
+            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin orantısını ve çözünürlüğünü iyileştirme
+            # DPI değeri ile kalite artırıldı, sınırlar (spines) kaldırılarak ferahlık sağlandı
+            fig_shap = plt.figure(figsize=(6, 4.5), dpi=150)
+            
             with plt.rc_context({
-                "font.size": 8,
-                "axes.labelsize": 8,
-                "xtick.labelsize": 7.5,
-                "ytick.labelsize": 7.5,
-                "axes.titlesize": 9.5,
-                "figure.facecolor": "white",
+                'font.size': 8, 
+                'axes.labelsize': 8, 
+                'xtick.labelsize': 8, 
+                'ytick.labelsize': 8,
+                'axes.spines.top': False,
+                'axes.spines.right': False,
+                'axes.spines.left': False,
+                'axes.spines.bottom': False
             }):
-                shap.plots.waterfall(shap_values[0], max_display=10, show=False)
-                plt.gcf().patch.set_facecolor("white")
-                plt.tight_layout(pad=1.5)
-                st.pyplot(plt.gcf())
-            # ──────────────────────────────────────────────────────────────────
+                # Karmaşayı önlemek için gösterilecek maksimum detay 8'e düşürüldü
+                shap.plots.waterfall(shap_values[0], max_display=8, show=False)
+                plt.tight_layout()
+                # use_container_width=True ile Streamlit paneline tam oturması sağlandı
+                st.pyplot(fig_shap, use_container_width=True)
             
         # Generate and provide PDF download option
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
@@ -535,12 +533,14 @@ with t3:
 with t4:
     st.markdown("### " + ("5 Yıllık Trend Analizi" if lang=="tr" else "5-Year Trend Analysis"))
     
+    # --- (INFO BOX) ---
     info_text = (
         "Bu modül, seçtiğiniz ülkenin ve belirlediğiniz göstergenin son 5 yıldaki gelişim seyrini görselleştirerek tarihsel performans eğilimlerini analiz etmenize olanak tanır." 
         if lang == "tr" else 
         "This module allows you to analyze historical performance trends by visualizing the 5-year trajectory of the selected country and indicator."
     )
     st.info(info_text, icon="💡")
+    # ------------------------------------------
 
     d5_c, f5_c = st.columns(2)
     with d5_c: d5 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="trend_c")
@@ -557,14 +557,20 @@ with t4:
         if actual_col and actual_col in country_data.columns:
             x, y = country_data[year_col].astype(int).tolist(), country_data[actual_col].tolist()
             
+            # --- CHART UPDATES HERE ---
+            # Adjusted the chart size to be more proportional:
             fig_trend, ax = plt.subplots(figsize=(7, 4)) 
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
+            
+            # Displaying only integer years on the X-axis (hiding decimal intervals like 2021.5):
             ax.set_xticks(x) 
+            # ------------------------------------
             
             st.pyplot(fig_trend)
             
+            # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
             pdf_text = f"Ulke: {d5}\nIncelenen Degisken: {feat_dropdown}" if lang=="tr" else f"Country: {d5}\nVariable: {feat_dropdown}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
@@ -578,6 +584,7 @@ with t4:
         else:
             st.error("Veri bulunamadı." if lang == "tr" else "Data not found.")
 
+# ============================================================
 # ============================================================
 # TAB 5: SENSITIVITY ANALYSIS 
 # ============================================================
@@ -600,6 +607,7 @@ with t5:
             val = adv_inputs[i]
             is_cost = orig_name.lower().strip() in cost_cols
             
+            # --- STRATEJİK İYİLEŞTİRME MANTIĞI ---
             if is_cost:
                 new_val = val * 0.90
                 act = "İyileştirme (Azalış)" if lang == "tr" else "Improvement (Decrease)"
@@ -618,9 +626,11 @@ with t5:
         impacts.sort(key=lambda x: x["Gain"], reverse=True)
         
         if impacts:
+            # Tablo başlığı dile göre değişsin
             tbl_title = f"#### {TARGET_YEAR} Skoru İçin Stratejik Müdahale Tablosu" if lang=="tr" else f"#### Strategic Intervention Table for {TARGET_YEAR} Score"
             st.write(tbl_title)
             
+            # --- TABLO HAZIRLAMA ---
             col_ind = "Değişken" if lang=="tr" else "Indicator"
             col_scen = "Senaryo" if lang=="tr" else "Scenario"
             col_tar = "Yeni Hedef" if lang=="tr" else "Target"
@@ -638,6 +648,7 @@ with t5:
             df_table = pd.DataFrame(table_rows)
             st.table(df_table) 
             
+            # --- PDF VE METİN RAPORU ---
             if lang == "tr":
                 report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
                 report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
@@ -665,7 +676,8 @@ with t5:
             st.warning(no_impact_msg)
 
 # ============================================================
-# TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE SÖZLÜK)
+# ============================================================
+# TAB 6: GLOBAL LEADERBOARD & MAP (125+ ÜLKE  SÖZLÜK)
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
@@ -694,6 +706,7 @@ with t6:
             
             df_map = pd.DataFrame(map_data)
             
+            # GII Verisindeki Tüm Olası Ülkeler İçin Plotly Standart İsim Eşleştirmesi
             full_country_mapping = {
                 "Albania": "Albania", "Algeria": "Algeria", "Angola": "Angola", "Argentina": "Argentina",
                 "Armenia": "Armenia", "Australia": "Australia", "Austria": "Austria", "Azerbaijan": "Azerbaijan",
@@ -753,6 +766,7 @@ with t6:
                 "Yemen": "Yemen", "Zambia": "Zambia", "Zimbabwe": "Zimbabwe"
             }
             
+            # Harita için isimleri tek bir hamlede eşleştir
             df_map["Harita_Icin_Ulke"] = df_map[col_country].replace(full_country_mapping)
             
             col_m1, col_m2 = st.columns([1, 2])
@@ -783,6 +797,7 @@ with t6:
                     title="GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
                 )
                 
+    
                 fig_map.add_scattergeo(
                     locations=df_map["Harita_Icin_Ulke"], 
                     locationmode="country names",
