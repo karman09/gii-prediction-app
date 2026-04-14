@@ -407,7 +407,7 @@ with t2:
             
         # TAB 2 GÜNCELLEMESİ: Daha yüksek çözünürlüklü, zarif ve ince hatlı tasarım
         fig_height = max(4.0, len(lbls) * 0.20) 
-        fig, ax = plt.subplots(figsize=(6, fig_height), dpi=150)
+        fig, ax = plt.subplots(figsize=(4, fig_height), dpi=300)
         y = np.arange(len(lbls))
         
         # Çubuk kalınlıkları daha zarif ve arayüz rengiyle uyumlu hale getirildi
@@ -429,7 +429,7 @@ with t2:
         ax.xaxis.grid(True, linestyle='--', alpha=0.5, color='#cccccc')
         ax.set_axisbelow(True)
         
-        ax.legend(fontsize=4, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
+        ax.legend(fontsize=2, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
         
         ax.axvline(0, color='black', linewidth=0.8)
         plt.tight_layout()
@@ -499,10 +499,10 @@ with t3:
         with col_plot:
             # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin orantısını ve çözünürlüğünü iyileştirme
             # DPI değeri ile kalite artırıldı, sınırlar (spines) kaldırılarak ferahlık sağlandı
-            fig_shap = plt.figure(figsize=(6, 4.5), dpi=150)
+            fig_shap = plt.figure(figsize=(4, 4.5), dpi=300)
             
             with plt.rc_context({
-                'font.size': 6, 
+                'font.size': 4, 
                 'axes.labelsize': 8, 
                 'xtick.labelsize': 8, 
                 'ytick.labelsize': 8,
