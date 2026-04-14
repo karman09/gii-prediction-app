@@ -398,16 +398,17 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        fig_height = max(4, len(lbls) * 0.28) 
-        fig, ax = plt.subplots(figsize=(7, fig_height))
+        fig_height = max(5, len(lbls) * 0.25) 
+        fig, ax = plt.subplots(figsize=(6, fig_height))
         y = np.arange(len(lbls))
         ax.barh(y - 0.175, z1, 0.35, label=f"{c1}", color="#0f766e", alpha=0.9)
         ax.barh(y + 0.175, z2, 0.35, label=f"{c2}", color="#64748b", alpha=0.9)
-        ax.set_yticks(y); ax.set_yticklabels(lbls, fontsize=10)
-        ax.legend()
+        ax.set_yticks(y); ax.set_yticklabels(lbls, fontsize=7)
+        ax.legend(fontsize=7)
         ax.axvline(0, color='black', linewidth=1, linestyle='--')
         plt.tight_layout()
-        st.pyplot(fig)
+        st.pyplot(fig, use_container_width=False)
+    
         
         # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
