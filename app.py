@@ -416,7 +416,7 @@ with t2:
         ax.barh(y + bar_width/2, z2, bar_width, label=f"{c2}", color="#5DADE2", edgecolor='none', alpha=0.9)
         
         ax.set_yticks(y)
-        ax.set_yticklabels(lbls, fontsize=8, color="#333333") 
+        ax.set_yticklabels(lbls, fontsize=6, color="#333333") 
         ax.tick_params(axis='x', labelsize=8, colors="#333333")
         
         # Kaba görünen çerçeve çizgilerini (spines) kaldırma
@@ -502,7 +502,7 @@ with t3:
             fig_shap = plt.figure(figsize=(6, 4.5), dpi=150)
             
             with plt.rc_context({
-                'font.size': 8, 
+                'font.size': 6, 
                 'axes.labelsize': 8, 
                 'xtick.labelsize': 8, 
                 'ytick.labelsize': 8,
