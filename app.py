@@ -405,19 +405,18 @@ with t2:
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
-        # TAB 2 GÜNCELLEMESİ: Figür boyutu küçültüldü, fontlar ufaltıldı
-        fig_height = max(3.5, len(lbls) * 0.20) 
-        fig, ax = plt.subplots(figsize=(6, fig_height))
-        y = np.arange(len(lbls))
+        # TAB 2 GÜNCELLEMESİ: Figür boyutu ve fontlar küçültüldü
+        fig_height = max(3.0, len(lbls) * 0.15) 
+        fig, ax = plt.subplots(figsize=(5, fig_height))
         
-        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları ve boşlukları daha derli toplu yapıldı
+        # TAB 2 GÜNCELLEMESİ: Bar kalınlıkları daha derli toplu yapıldı
         ax.barh(y - 0.15, z1, 0.3, label=f"{c1}", color="#0f766e", alpha=0.9)
         ax.barh(y + 0.15, z2, 0.3, label=f"{c2}", color="#64748b", alpha=0.9)
         
         ax.set_yticks(y)
-        ax.set_yticklabels(lbls, fontsize=8) # Font küçültüldü
-        ax.tick_params(axis='x', labelsize=8) # X ekseni font küçültüldü
-        ax.legend(fontsize=8) # Lejant fontu küçültüldü
+        ax.set_yticklabels(lbls, fontsize=6) # Font küçültüldü
+        ax.tick_params(axis='x', labelsize=6) # X ekseni font küçültüldü
+        ax.legend(fontsize=6) # Lejant fontu küçültüldü
         
         ax.axvline(0, color='black', linewidth=1, linestyle='--')
         plt.tight_layout()
@@ -451,10 +450,17 @@ with t3:
         pred, model_input = calculate_score_engine(d4, raw_vals_current)
         actual_val_str = get_actual_gii(d4, lang)
         
-        target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {pred:.2f}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_val_str}\n\n---\n"
-        if target_score > 0:
-            gap = target_score - pred
-            target_text += f"🎯 **Hedef:** {target_score:.2f} | " + (f"📉 **Fark:** {gap:.2f} Puan" if gap > 0 else "🎉 **Durum:** Hedefin üzerindesiniz!")
+        # TAB 3 GÜNCELLEMESİ: Dil seçimine göre dinamik metin (İngilizce kısmı eksikti)
+        if lang == "tr":
+            target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {pred:.2f}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_val_str}\n\n---\n"
+            if target_score > 0:
+                gap = target_score - pred
+                target_text += f"🎯 **Hedef:** {target_score:.2f} | " + (f"📉 **Fark:** {gap:.2f} Puan" if gap > 0 else "🎉 **Durum:** Hedefin üzerindesiniz!")
+        else:
+            target_text = f"**Analyzed Country:** {d4}\n\n**{TARGET_YEAR} GII Forecast:** {pred:.2f}\n\n**{TARGET_YEAR} Actual:** {actual_val_str}\n\n---\n"
+            if target_score > 0:
+                gap = target_score - pred
+                target_text += f"🎯 **Target:** {target_score:.2f} | " + (f"📉 **Gap:** {gap:.2f} Points" if gap > 0 else "🎉 **Status:** You are above the target!")
 
         explainer = shap.Explainer(model)
         shap_values = explainer(model_input)
@@ -479,11 +485,11 @@ with t3:
             st.info(target_text)
             st.warning(shap_text)
         with col_plot:
-            # TAB 3 GÜNCELLEMESİ: Figür boyutu küçültüldü (9, 6 yerine 6, 4)
-            fig_shap = plt.figure(figsize=(6, 4))
+            # TAB 3 GÜNCELLEMESİ: Figür boyutu iyice küçültüldü
+            fig_shap = plt.figure(figsize=(5, 3.5))
             
-            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini küçültmek için geçici konfigürasyon eklendi
-            with plt.rc_context({'font.size': 8, 'axes.labelsize': 8, 'xtick.labelsize': 8, 'ytick.labelsize': 8}):
+            # TAB 3 GÜNCELLEMESİ: SHAP grafiğinin yazı tipini küçültmek için geçici konfigürasyon fontları küçültüldü
+            with plt.rc_context({'font.size': 6, 'axes.labelsize': 6, 'xtick.labelsize': 6, 'ytick.labelsize': 6}):
                 shap.plots.waterfall(shap_values[0], max_display=10, show=False)
                 plt.tight_layout()
                 st.pyplot(fig_shap)
