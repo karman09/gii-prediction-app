@@ -559,7 +559,7 @@ with t4:
             
             # --- CHART UPDATES HERE ---
             # Adjusted the chart size to be more proportional:
-            fig_trend, ax = plt.subplots(figsize=(7, 4)) 
+            fig_trend, ax = plt.subplots(figsize=(4, 2.5)) 
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             ax.set_title(f"{d5} - {feat_dropdown}")
