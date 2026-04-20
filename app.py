@@ -233,21 +233,21 @@ else:
 with st.expander("Metodoloji Hakkında" if lang=="tr" else "About Methodology"):
     if lang == "tr":
         st.markdown("""
-        **1. Klasik GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan tam **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
+        **1. Geleneksel GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
         
-        **2. Geliştirilen Yapay Zeka Modeli:** Bu sistem, 78 değişkenin tamamını manuel hesaplamak yerine, **tahminsel (predictive)** bir yaklaşım sunar:
-        * **Kritik Değişken Seçimi:** Model, 78 gösterge arasından GII skorunu en çok etkileyen **"24 Kritik Belirleyici"** tespit etmiştir.
-        * **Doğrusal Olmayan Öğrenme:** Model seçilen **24 değişken** arasındaki karmaşık ilişkileri öğrenerek sonuç üretir.
-        * **SHAP (XAI):** Tahminlerin nedenini açıklayan "Açıklanabilir Yapay Zeka" teknolojisi entegre edilmiştir.
+        **2. Gelişmiş Makine Öğrenmesi Mimarisi:** Bu sistem, tüm değişkenleri manuel hesaplamak yerine, geçmiş verilerden öğrenerek geleceği öngören (predictive) dinamik bir modelleme altyapısı kullanır:
+        * **Özellik Seçimi (Lasso CV):** Yüksek boyutlu veri setindeki en etkili değişkenleri belirlemek amacıyla L1 Düzenlileştirmesi (Lasso Regresyonu) kullanılmış ve GII skoruna en yüksek istatistiksel katkıyı sağlayan kritik belirleyiciler izole edilmiştir.
+        * **Algoritmik Modelleme (LightGBM):** Doğrusal olmayan karmaşık örüntüleri yakalayabilen, karar ağacı tabanlı gelişmiş gradyan artırma (Gradient Boosting) algoritması kullanılarak yüksek doğruluklu tahminler üretilmektedir. Model güvenilirliği, Zamansal Çapraz Doğrulama (Nested Temporal CV) ile test edilmiştir.
+        * **Açıklanabilir Yapay Zeka (XAI - SHAP):** Tahminlerin "kara kutu" (black-box) olmaktan çıkarılması için oyun teorisi tabanlı SHAP (Shapley Additive exPlanations) entegre edilmiş, her bir değişkenin nihai skora olan marjinal katkısı şeffaf bir şekilde modellenmiştir.
         """)
     else:
         st.markdown("""
         **1. Classical GII Calculation (WIPO Methodology):** The GII is calculated by taking the weighted average of exactly **78 indicators** grouped under **7 main pillars**.
         
-        **2. Developed AI Model:** Instead of manual calculation, this system offers a **predictive** approach:
-        * **Critical Variable Selection:** The model identified **"24 Critical Determinants"** that most impact the score.
-        * **Non-linear Learning:** The model produces results by learning complex relationships between the selected **24 variables**.
-        * **SHAP (XAI):** Integrated "Explainable AI" to show the reasoning behind each forecast.
+        **2. Advanced Machine Learning Architecture:** Instead of traditional manual calculations, this system employs a dynamic predictive modeling framework:
+        * **Feature Selection (Lasso CV):** L1 Regularization (Lasso CV) is utilized to eliminate noise and isolate the most statistically significant critical determinants from the high-dimensional dataset.
+        * **Algorithmic Modeling (LightGBM):** High-accuracy forecasts are generated using advanced tree-based gradient boosting algorithms capable of capturing complex non-linear patterns. Model robustness is validated via Nested Temporal Cross-Validation.
+        * **Explainable AI (SHAP):** Game-theory-based SHAP (Shapley Additive exPlanations) algorithms are integrated to demystify the 'black-box' nature of the model, transparently quantifying the marginal contribution of each variable to the final predicted score.
         """)
         
 # --- UI TABS CONFIGURATION ---
