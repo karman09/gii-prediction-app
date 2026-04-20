@@ -1,0 +1,14 @@
+name: Keep Streamlit App Awake
+
+on:
+  schedule:
+    # Her 30 dakikada bir çalıştır
+    - cron: "*/30 * * * *"
+  workflow_dispatch: #  manuel olarak test  için
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: curl -s https://gii-prediction-app-b7r3aua6vzn3yn7pvd4kqn.streamlit.app/ > /dev/null
