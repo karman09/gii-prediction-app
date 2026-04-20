@@ -236,7 +236,7 @@ with st.expander("Metodoloji Hakkında" if lang=="tr" else "About Methodology"):
         **1. Geleneksel GII Hesaplaması (WIPO Metodolojisi):** Küresel İnovasyon Endeksi (GII), 2025 yılı itibarıyla **7 ana sütun** altında toplanan **78 farklı göstergenin** ağırlıklı ortalaması alınarak hesaplanır.
         
         **2. Gelişmiş Makine Öğrenmesi Mimarisi:** Bu sistem, tüm değişkenleri manuel hesaplamak yerine, geçmiş verilerden öğrenerek geleceği öngören (predictive) dinamik bir modelleme altyapısı kullanır:
-        * **Özellik Seçimi (Lasso CV):** Yüksek boyutlu veri setindeki en etkili değişkenleri belirlemek amacıyla L1 Düzenlileştirmesi (Lasso Regresyonu) kullanılmış ve GII skoruna en yüksek istatistiksel katkıyı sağlayan kritik belirleyiciler izole edilmiştir.
+        * **Özellik Seçimi (Lasso CV):** Yüksek boyutlu veri setindeki en etkili değişkenleri belirlemek amacıyla L1 Düzenlileştirmesi (Lasso Regresyonu) kullanılmış ve GII skoruna en yüksek istatistiksel katkıyı sağlayan kritik değişkenler belirlenmiştir.
         * **Algoritmik Modelleme (LightGBM):** Doğrusal olmayan karmaşık örüntüleri yakalayabilen, karar ağacı tabanlı gelişmiş gradyan artırma (Gradient Boosting) algoritması kullanılarak yüksek doğruluklu tahminler üretilmektedir. Model güvenilirliği, Zamansal Çapraz Doğrulama (Nested Temporal CV) ile test edilmiştir.
         * **Açıklanabilir Yapay Zeka (XAI - SHAP):** Tahminlerin "kara kutu" (black-box) olmaktan çıkarılması için oyun teorisi tabanlı SHAP (Shapley Additive exPlanations) entegre edilmiş, her bir değişkenin nihai skora olan marjinal katkısı şeffaf bir şekilde modellenmiştir.
         """)
