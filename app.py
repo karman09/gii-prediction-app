@@ -591,9 +591,9 @@ with t5:
     st.markdown("### " + (f"Senaryo Bazlı Duyarlılık Analizi ({INPUT_YEAR})" if lang=="tr" else f"Scenario-Based Sensitivity Analysis ({INPUT_YEAR})"))
     
     if lang == "tr":
-        st.info("💡 **Bu modül**, mevcut değişkenlerdeki %10'luk bir iyileşmenin genel skora etkisini otomatik ölçerek, politika yapıcılar için öncelikli müdahale alanlarını belirler.")
+        st.info("💡 **Bu modül**, diğer tüm değişkenler sabit tutulurken her bir değişkendeki %10'luk bireysel bir iyileşmenin genel skora etkisini otomatik olarak ölçer ve politika yapıcılar için öncelikli müdahale alanlarını belirler.")
     else:
-        st.info("💡 **This module** automatically measures the impact of a 10% improvement in current variables on the overall score, identifying priority intervention areas for policymakers.")
+        st.info("💡 **This module** automatically measures the impact of a 10% individual improvement in each variable while keeping all other variables constant, identifying priority intervention areas for policymakers.")
 
     adv_country = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="adv_country")
     
