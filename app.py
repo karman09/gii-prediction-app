@@ -492,31 +492,33 @@ with t3:
                 fname = reverse_feature_map.get(f, f)
                 shap_text += f"- {fname}: {v:.2f}\n"
 
-        col_txt, col_plot = st.columns([1,2])
+        # GÜNCELLEME: Sütun oranı düzenlendi
+        col_txt, col_plot = st.columns([1, 1.4])
+        
         with col_txt:
             st.info(target_text)
             st.warning(shap_text)
+            
         with col_plot:
-            # TAB 3 UPDATE: Optimize SHAP plot proportions and resolution
-            fig_shap = plt.figure(figsize=(6, 4.5), dpi=300)
+            # GÜNCELLEME: Grafik boyutu ve font küçültüldü
+            fig_shap = plt.figure(figsize=(5, 3.5), dpi=120)
             
             with plt.rc_context({
-                'font.size': 4, 
-                'axes.labelsize': 4, 
-                'xtick.labelsize': 4, 
-                'ytick.labelsize': 4,
+                'font.size': 5,
+                'axes.labelsize': 6,
+                'xtick.labelsize': 6,
+                'ytick.labelsize': 5,
                 'axes.spines.top': False,
                 'axes.spines.right': False,
                 'axes.spines.left': False,
                 'axes.spines.bottom': False
             }):
-                # Limit max_display to 8 to prevent visual clutter
-                shap.plots.waterfall(shap_values[0], max_display=8, show=False)
+                # GÜNCELLEME: max_display 8'den 6'ya düşürüldü
+                shap.plots.waterfall(shap_values[0], max_display=6, show=False)
                 plt.tight_layout()
-                # Ensure the plot fits the Streamlit container
                 st.pyplot(fig_shap, use_container_width=True)
             
-        # Generate and provide PDF download option
+        # PDF indirme butonu
         pdf_title = "Hedef ve SHAP Analizi" if lang=="tr" else "Target and SHAP Analysis"
         pdf_text = (target_text + "\n" + shap_text).replace("**", "")
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_shap)
