@@ -214,7 +214,7 @@ def get_actual_gii(country, lang):
 # 4. STREAMLIT INTERFACE
 # ============================================================
 
-lang_choice = st.sidebar.radio("Language / Dil", ["🇹🇷 Türkçe", "🇬🇧 English"])
+lang_choice = st.sidebar.radio("Language / Dil", ["🇹🇷 Türkçe", "🇬🇧 English"],index=1)
 lang = "tr" if "Türkçe" in lang_choice else "en"
 
 # Logo and Title Integration
