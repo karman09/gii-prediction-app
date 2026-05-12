@@ -588,7 +588,7 @@ with t4:
 # TAB 5: SENSITIVITY ANALYSIS 
 # ============================================================
 with t5:
-    st.markdown("### " + (f"Senaryo Bazlı Duyarlılık Analizi ({INPUT_YEAR})" if lang=="tr" else f"Scenario-Based Sensitivity Analysis ({INPUT_YEAR})"))
+    st.markdown("### " + ("Senaryo Bazlı Duyarlılık Analizi" if lang=="tr" else "Scenario-Based Sensitivity Analysis"))
     
     if lang == "tr":
         st.info("💡 **Bu modül**, diğer tüm değişkenler sabit tutulurken her bir değişkendeki %10'luk bireysel bir iyileşmenin genel skora etkisini otomatik olarak ölçer ve politika yapıcılar için öncelikli müdahale alanlarını belirler.")
