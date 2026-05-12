@@ -501,10 +501,10 @@ with t3:
             fig_shap = plt.figure(figsize=(6, 4.5), dpi=300)
             
             with plt.rc_context({
-                'font.size': 6, 
-                'axes.labelsize': 8, 
-                'xtick.labelsize': 8, 
-                'ytick.labelsize': 8,
+                'font.size': 4, 
+                'axes.labelsize': 4, 
+                'xtick.labelsize': 4, 
+                'ytick.labelsize': 4,
                 'axes.spines.top': False,
                 'axes.spines.right': False,
                 'axes.spines.left': False,
