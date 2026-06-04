@@ -810,35 +810,6 @@ with t6:
                 st.plotly_chart(fig_map, use_container_width=True)
 
 
-# ============================================================
-# TAB 7: DATA EXPLORER & CORRELATION
-# ============================================================
-with t7:
-    st.markdown("### " + ("Veri Keşfi ve Korelasyon" if lang=="tr" else "Data Explorer & Correlation"))
-    st.info("💡 " + (
-        "Bu modül, modele temel oluşturan ham veri setini detaylı olarak incelemenize ve kritik değişkenler arasındaki korelasyonu keşfetmenize olanak tanır." 
-        if lang=="tr" else 
-        "This module allows you to examine the underlying raw dataset in detail and discover the correlations between critical variables."
-    ))
-    
-    st.write("**Ham Veri Tablosu**" if lang=="tr" else "**Raw Data Table**")
-    st.dataframe(latest_data_raw[ui_input_names], use_container_width=True)
-    
-    st.write("---")
-    st.write("**Değişkenler Arası Korelasyon**" if lang=="tr" else "**Correlation Matrix**")
-    
-    if st.button("Korelasyon Matrisini Çiz" if lang=="tr" else "Plot Correlation", key="corr_btn"):
-        with st.spinner("Isı Haritası Oluşturuluyor..." if lang=="tr" else "Generating Heatmap..."):
-            corr_matrix = latest_data_raw[ui_input_names].corr()
-            fig_corr = px.imshow(
-                corr_matrix, 
-                text_auto=False, 
-                aspect="auto", 
-                color_continuous_scale="RdBu_r",
-                title="Değişken Korelasyon Isı Haritası" if lang=="tr" else "Variable Correlation Heatmap"
-            )
-            fig_corr.update_layout(margin=dict(l=0, r=0, t=30, b=0))
-            st.plotly_chart(fig_corr, use_container_width=True)
 
 # ============================================================
 # FOOTER & DATA SOURCE ATTRIBUTION
