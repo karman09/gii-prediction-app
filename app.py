@@ -252,9 +252,9 @@ with st.expander("Metodoloji Hakkında" if lang=="tr" else "About Methodology"):
         
 # --- UI TABS CONFIGURATION ---
 t1, t2, t3, t4, t5, t6, t7 = st.tabs([
-    "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi", "Küresel Sıralama ve Harita", "Veri Keşfi ve Korelasyon"
+    "Senaryo Simülatörü", "Karşılaştırmalı Analiz", "Hedef ve SHAP", "Trend Analizi", "Duyarlılık Analizi", "Küresel Sıralama ve Harita"
 ] if lang=="tr" else [
-    "Scenario Simulator", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Sensitivity Analysis", "Global Leaderboard & Map", "Data Explorer & Correlation"
+    "Scenario Simulator", "Comparative Analysis", "Target & SHAP", "Trend Analysis", "Sensitivity Analysis", "Global Leaderboard & Map"
 ])
 
 # ============================================================
