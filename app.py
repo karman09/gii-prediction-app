@@ -158,7 +158,7 @@ country_translation_dict = {
     "Canada": "Kanada", "Chile": "Şili", "China": "Çin", "Colombia": "Kolombiya",
     "Costa Rica": "Kosta Rika", "Côte d'Ivoire": "Fildişi Sahili", "Cote d'Ivoire": "Fildişi Sahili",
     "Croatia": "Hırvatistan", "Cuba": "Küba", "Cyprus": "Kıbrıs",
-    "Czech Republic": "Çekya", "Czechia": "Çekya",
+    "Czech Republic": "Çek Cumhuriyeti", "Czechia": "Çek Cumhuriyeti",
     "Democratic Republic of the Congo": "Kongo Demokratik Cumhuriyeti", "Congo, Dem. Rep.": "Kongo Demokratik Cumhuriyeti",
     "Denmark": "Danimarka", "Dominican Republic": "Dominik Cumhuriyeti", "Ecuador": "Ekvator",
     "Egypt": "Mısır", "Egypt, Arab Rep.": "Mısır", "El Salvador": "El Salvador", "Estonia": "Estonya",
@@ -680,6 +680,17 @@ with t3:
             }):
                 # GÜNCELLEME: max_display 8'den 6'ya düşürüldü
                 shap.plots.waterfall(shap_values[0], max_display=6, show=False)
+                # DEGISTI: TR'de "N other features" toplulastirma etiketini Turkce goster
+                if lang == "tr":
+                    ax_w = plt.gca()
+                    yt_labels = [t.get_text() for t in ax_w.get_yticklabels()]
+                    if any("other features" in l for l in yt_labels):
+                        ax_w.set_yticklabels(
+                            [re.sub(r"(\d+)\s+other features", r"\1 diğer değişken", l) for l in yt_labels]
+                        )
+                    for _txt in ax_w.texts:
+                        if "other features" in _txt.get_text():
+                            _txt.set_text(re.sub(r"(\d+)\s+other features", r"\1 diğer değişken", _txt.get_text()))
                 plt.tight_layout()
                 st.pyplot(fig_shap, use_container_width=True)
             
@@ -1011,3 +1022,4 @@ footer_html = f"""
 </div>
 """
 st.markdown(footer_html, unsafe_allow_html=True)
+
