@@ -154,13 +154,13 @@ country_translation_dict = {
     "Bolivia (Plurinational State of)": "Bolivya", "Bolivia": "Bolivya",
     "Bosnia and Herzegovina": "Bosna-Hersek", "Botswana": "Botsvana", "Brazil": "Brezilya",
     "Brunei Darussalam": "Brunei", "Bulgaria": "Bulgaristan", "Burkina Faso": "Burkina Faso",
-    "Burundi": "Burundi", "Cabo Verde": "Yeşil Burun (Cabo Verde)", "Cambodia": "Kamboçya", "Cameroon": "Kamerun",
+    "Burundi": "Burundi", "Cabo Verde": "Cabo Verde", "Cambodia": "Kamboçya", "Cameroon": "Kamerun",
     "Canada": "Kanada", "Chile": "Şili", "China": "Çin", "Colombia": "Kolombiya",
     "Costa Rica": "Kosta Rika", "Côte d'Ivoire": "Fildişi Sahili", "Cote d'Ivoire": "Fildişi Sahili",
     "Croatia": "Hırvatistan", "Cuba": "Küba", "Cyprus": "Kıbrıs",
     "Czech Republic": "Çekya", "Czechia": "Çekya",
-    "Democratic Republic of the Congo": "Demokratik Kongo Cumhuriyeti", "Congo, Dem. Rep.": "Demokratik Kongo Cumhuriyeti",
-    "Denmark": "Danimarka", "Dominican Republic": "Dominik Cumhuriyeti", "Ecuador": "Ekvador",
+    "Democratic Republic of the Congo": "Kongo Demokratik Cumhuriyeti", "Congo, Dem. Rep.": "Kongo Demokratik Cumhuriyeti",
+    "Denmark": "Danimarka", "Dominican Republic": "Dominik Cumhuriyeti", "Ecuador": "Ekvator",
     "Egypt": "Mısır", "Egypt, Arab Rep.": "Mısır", "El Salvador": "El Salvador", "Estonia": "Estonya",
     "Eswatini": "Esvatini", "Ethiopia": "Etiyopya", "Fiji": "Fiji", "Finland": "Finlandiya", "France": "Fransa",
     "Gabon": "Gabon", "Gambia": "Gambiya", "Georgia": "Gürcistan", "Germany": "Almanya",
@@ -174,7 +174,7 @@ country_translation_dict = {
     "Lao People's Democratic Republic": "Laos", "Lao People's Dem. Rep.": "Laos", "Lao PDR": "Laos",
     "Latvia": "Letonya", "Lebanon": "Lübnan", "Lithuania": "Litvanya", "Luxembourg": "Lüksemburg",
     "Madagascar": "Madagaskar", "Malawi": "Malavi", "Malaysia": "Malezya", "Mali": "Mali",
-    "Malta": "Malta", "Mauritania": "Moritanya", "Mauritius": "Mauritius", "Mexico": "Meksika",
+    "Malta": "Malta", "Mauritania": "Moritanya", "Mauritius": "Morityus", "Mexico": "Meksika",
     "Moldova, Republic of": "Moldova", "Republic of Moldova": "Moldova", "Moldova": "Moldova",
     "Mongolia": "Moğolistan", "Montenegro": "Karadağ", "Morocco": "Fas",
     "Mozambique": "Mozambik", "Myanmar": "Myanmar", "Namibia": "Namibya", "Nepal": "Nepal",
@@ -660,7 +660,14 @@ with t3:
         with col_plot:
             # GÜNCELLEME: Grafik boyutu ve font küçültüldü
             fig_shap = plt.figure(figsize=(5, 3.5), dpi=120)
-            
+
+            # DEGISTI: TR'de selale grafigi eksen adlarini sozlukten Turkce goster
+            # (metin icgoruleri yukarida zaten hesaplandi; degerler/siralama degismez, yalniz etiket)
+            if lang == "tr":
+                shap_values.feature_names = [
+                    tr_label(reverse_feature_map.get(f, f)) for f in shap_values.feature_names
+                ]
+
             with plt.rc_context({
                 'font.size': 5,
                 'axes.labelsize': 6,
