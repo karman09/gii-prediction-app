@@ -197,7 +197,7 @@ country_translation_dict = {
     "Tunisia": "Tunus", "Türkiye": "Türkiye", "Turkiye": "Türkiye", "Turkey": "Türkiye",
     "Uganda": "Uganda", "Ukraine": "Ukrayna",
     "United Arab Emirates": "Birleşik Arap Emirlikleri",
-    "United Kingdom": "Birleşik Krallık",
+    "United Kingdom": "İngiltere",
     "United States of America": "Amerika Birleşik Devletleri", "United States": "Amerika Birleşik Devletleri",
     "Uruguay": "Uruguay", "Uzbekistan": "Özbekistan",
     "Venezuela (Bolivarian Republic of)": "Venezuela", "Venezuela": "Venezuela",
@@ -1022,4 +1022,3 @@ footer_html = f"""
 </div>
 """
 st.markdown(footer_html, unsafe_allow_html=True)
-
