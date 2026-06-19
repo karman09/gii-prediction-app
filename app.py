@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np 
 import joblib
 import matplotlib.pyplot as plt 
+from matplotlib.ticker import FuncFormatter  # EKLENDI: TR ekseninde virgül ondalik icin
 import re
 import math
 import shap 
@@ -70,6 +71,80 @@ div[data-testid="stExpander"] {
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # ============================================================
+# TÜRKÇE SÖZLÜK VE GÖSTERİM YARDIMCILARI (YENİ EKLENEN BÖLÜM)
+# Not: Bu bölüm yalnızca GÖSTERİMİ etkiler; hiçbir hesaplama değişmez.
+# ============================================================
+translation_dict = {
+    'applied tariff rate, weighted avg., %': 'Uygulanan gümrük vergisi oranı, ağırlıklı ortalama, %',
+    'citable documents h-index': 'Atıf yapılabilir yayınlar h-endeksi',
+    'creative goods exports, % total trade': "Yaratıcı ürün ihracatı, toplam ticaretin %'si",
+    'cultural and creative services exports, % total trade': "Kültürel ve yaratıcı hizmet ihracatı, toplam ticaretin %'si",
+    'domestic credit to private sector, % gdp': "Özel sektöre verilen yerli kredi, GSYH %'si",
+    'domestic industry diversification': 'Yerli sanayi çeşitlendirmesi',
+    'domestic market scale, bn ppp$': 'İç pazar ölçeği, milyar SAGP $',
+    'electricity output, gwh/mn pop.': 'Elektrik üretimi, GWh/milyon nüfus',
+    'expenditure on education, % gdp': "Eğitim harcamaları, GSYH %'si",
+    'fdi net inflows, % gdp': "Doğrudan yabancı yatırım net girişleri, GSYH %'si",
+    'females employed w/advanced degrees, %': 'İleri dereceye sahip çalışan kadınlar, %',
+    'gdp/unit of energy use': 'Enerji kullanım birimi başına GSYH',
+    'gerd financed by business, %': 'İş dünyası tarafından finanse edilen Ar-Ge harcamaları, %',
+    'gerd performed by business, % gdp': "İş dünyası tarafından yapılan Ar-Ge harcamaları, GSYH %'si",
+    'global brand value, top 5,000, % gdp': "Küresel marka değeri, ilk 5.000, GSYH %'si",
+    'government effectiveness': 'Hükümet etkinliği',
+    'government funding/pupil, secondary, % gdp/cap': "Öğrenci başına kamu fonu (ortaöğretim), kişi başı GSYH %'si",
+    'graduates in science and engineering, %': 'Fen ve mühendislik mezunları, %',
+    'gross capital formation, % gdp': "Gayrisafi sermaye oluşumu, GSYH %'si",
+    'gross expenditure on r&d, % gdp': "Gayrisafi Ar-Ge harcamaları (GERD), GSYH %'si",
+    'high-tech exports, % total trade': "Yüksek teknoloji ürün ihracatı, toplam ticaretin %'si",
+    'high-tech imports, % total trade': "Yüksek teknoloji ürün ithalatı, toplam ticaretin %'si",
+    'high-tech manufacturing, %': 'Yüksek teknoloji imalatı, %',
+    'ict services exports, % total trade': "BİT hizmetleri ihracatı, toplam ticaretin %'si",
+    'ict services imports, % total trade': "BİT hizmetleri ithalatı, toplam ticaretin %'si",
+    'industrial designs by origin/bn ppp$ gdp': 'Menşeine göre endüstriyel tasarımlar / milyar SAGP $ GSYH',
+    'intellectual property payments, % total trade': "Fikri mülkiyet ödemeleri, toplam ticaretin %'si",
+    'intellectual property receipts, % total trade': "Fikri mülkiyet gelirleri, toplam ticaretin %'si",
+    'knowledge-intensive employment, %': 'Bilgi-yoğun istihdam, %',
+    'logistics performance': 'Lojistik performans endeksi',
+    'market capitalization, % gdp': "Piyasa değeri (Borsa), GSYH %'si",
+    'mobile app creation/bn ppp$ gdp': 'Mobil uygulama geliştirme / milyar SAGP $ GSYH',
+    'operational stability for businesses*': 'İşletmeler için operasyonel istikrar*',
+    'patent families/bn ppp$ gdp': 'Patent aileleri / milyar SAGP $ GSYH',
+    'patents by origin/bn ppp$ gdp': 'Menşeine göre patent başvuruları / milyar SAGP $ GSYH',
+    'pisa scales in reading, maths and science': 'PISA okuma, matematik ve fen puanları',
+    'production and export complexity': 'Üretim ve ihracat karmaşıklığı',
+    'qs university ranking, top 3': 'QS üniversite sıralaması, ilk 3',
+    'regulatory quality': 'Düzenleyici kalitesi',
+    'research talent, % in businesses': 'Araştırmacı yeteneği, işletmelerdeki % payı',
+    'researchers, fte/mn pop.': 'Araştırmacılar, Tam Zaman Eşdeğer / milyon nüfus',
+    'rule of law': 'Hukukun üstünlüğü',
+    'school life expectancy, years': 'Okulda beklenen yaşam süresi, yıl',
+    'scientific and technical articles/bn ppp$ gdp': 'Bilimsel ve teknik makaleler / milyar SAGP $ GSYH',
+    'software spending, % gdp': "Yazılım harcamaları, GSYH %'si",
+    'tertiary enrolment, % gross': 'Yükseköğretime kayıt oranı, brüt %',
+    'tertiary inbound mobility, %': 'Yükseköğretim uluslararası öğrenci hareketliliği, %',
+    'trademarks by origin/bn ppp$ gdp': 'Menşeine göre ticari marka başvuruları / milyar SAGP $ GSYH',
+    'utility models by origin/bn ppp$ gdp': 'Menşeine göre faydalı modeller / milyar SAGP $ GSYH',
+    'Global Innovation Index': 'Küresel İnovasyon Endeksi'
+}
+
+def tr_label(name):
+    """Türkçe sayfada değişken adını sözlükten çevirir; bulunamazsa olduğu gibi döndürür.
+    İngilizce sayfada ise değeri hiç değiştirmez."""
+    if lang == "tr":
+        return translation_dict.get(name, translation_dict.get(str(name).strip().lower(), name))
+    return name
+
+def fmt(value, dec=2):
+    """Sayıyı dec ondalıkla biçimlendirir. Türkçe sayfada ondalık ayracı virgül,
+    İngilizce sayfada (orijinal davranış) nokta olur."""
+    try:
+        s = f"{float(value):.{dec}f}"
+    except (TypeError, ValueError):
+        return str(value)
+    if lang == "tr":
+        s = s.replace(".", ",")
+    return s
+
 # ============================================================
 # PDF GENERATION HELPER FUNCTION
 # ============================================================
@@ -298,7 +373,7 @@ with t1:
             
             # Interactive numerical input for simulating raw variable changes
             u_val = target_sub_col.number_input(
-                label=f"{feat_name}",
+                label=tr_label(feat_name),  # DEGISTI: TR'de degisken adi sozlukten gosterilir
                 value=current_val,
                 format="%.3f",
                 key=f"input_{sim_country}_{i}" # Unique widget key requirement for dynamic country rendering
@@ -315,22 +390,22 @@ with t1:
         # Metric Score Card
         st.metric(
             label=f"{TARGET_YEAR} " + ("Simüle Edilen Skor" if lang=="tr" else "Simulated Score"),
-            value=f"{sim_pred:.2f}",
-            delta=f"{diff:.2f} " + ("Puan Değişimi" if lang=="tr" else "Point Change")
+            value=fmt(sim_pred),  # DEGISTI: virgul ondalik (TR)
+            delta=f"{fmt(diff)} " + ("Puan Değişimi" if lang=="tr" else "Point Change")  # DEGISTI
         )
         
         st.write("---")
         st.write(f"**{sim_country} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
-        st.success(f"**{base_pred:.2f}**")
+        st.success(f"**{fmt(base_pred)}**")  # DEGISTI
         
         # Summary Evaluation
         if abs(diff) > 0.01:
             direction = "artış" if diff > 0 else "düşüş"
             if lang == "en": direction = "increase" if diff > 0 else "decrease"
             st.warning(f"⚠️ " + (
-                f"Yapılan değişiklikler skorda {abs(diff):.2f} puanlık bir {direction} yaratıyor."
+                f"Yapılan değişiklikler skorda {fmt(abs(diff))} puanlık bir {direction} yaratıyor."  # DEGISTI
                 if lang=="tr" else
-                f"The changes made result in a {abs(diff):.2f} point {direction} in the score."
+                f"The changes made result in a {fmt(abs(diff))} point {direction} in the score."  # DEGISTI
             ))
         
         if st.button("Değerleri Sıfırla" if lang=="tr" else "Reset Values"):
@@ -348,25 +423,33 @@ with t1:
         col_diff = "Fark" if lang=="tr" else "Diff"
         
         comparison_df = pd.DataFrame({
-            col_var: ui_input_names,
+            col_var: [tr_label(n) for n in ui_input_names],  # DEGISTI: TR'de degisken adlari sozlukten
             "2023 Baz (Raw)": base_raw_values,
             "Simülasyon (Raw)": new_sim_values
         })
         comparison_df[col_diff] = comparison_df["Simülasyon (Raw)"] - comparison_df["2023 Baz (Raw)"]
         changed_df = comparison_df[comparison_df[col_diff] != 0]
-        st.table(changed_df)
+
+        # DEGISTI: TR'de tabloda virgul ondalik (deger korunur, yalnizca ayrac degisir)
+        display_changed = changed_df.copy()
+        if lang == "tr":
+            for c in ["2023 Baz (Raw)", "Simülasyon (Raw)", col_diff]:
+                display_changed[c] = display_changed[c].map(
+                    lambda v: str(v).replace(".", ",") if pd.notna(v) else v
+                )
+        st.table(display_changed)
         
         # Generate and provide PDF download option
         pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
         
         if lang == "tr":
-            pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {base_pred:.2f}\nSimule Edilen Skor: {sim_pred:.2f}\nFark: {diff:.2f} Puan\n\n--- Degistirilen Degiskenler ---\n"
+            pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {fmt(base_pred)}\nSimule Edilen Skor: {fmt(sim_pred)}\nFark: {fmt(diff)} Puan\n\n--- Degistirilen Degiskenler ---\n"
         else:
-            pdf_text = f"Country: {sim_country}\nOriginal Forecast: {base_pred:.2f}\nSimulated Score: {sim_pred:.2f}\nDiff: {diff:.2f} Points\n\n--- Changed Variables ---\n"
+            pdf_text = f"Country: {sim_country}\nOriginal Forecast: {fmt(base_pred)}\nSimulated Score: {fmt(sim_pred)}\nDiff: {fmt(diff)} Points\n\n--- Changed Variables ---\n"
         
         if not changed_df.empty:
             for index, row in changed_df.iterrows():
-                pdf_text += f"{row[col_var]}: {row['2023 Baz (Raw)']:.2f} -> {row['Simülasyon (Raw)']:.2f} ({col_diff}: {row[col_diff]:.2f})\n"
+                pdf_text += f"{row[col_var]}: {fmt(row['2023 Baz (Raw)'])} -> {fmt(row['Simülasyon (Raw)'])} ({col_diff}: {fmt(row[col_diff])})\n"
         else:
             pdf_text += "Herhangi bir degisiklik yapilmamistir." if lang=="tr" else "No changes were made."
 
@@ -401,7 +484,8 @@ with t2:
         
         z1, z2, lbls = [], [], []
         for f in ui_input_names:
-            lbls.append(f + " (-)" if f.lower().strip() in cost_cols else f)
+            # DEGISTI: TR'de etiket sozlukten cevrilir; "(-)" maliyet eki korunur
+            lbls.append(tr_label(f) + " (-)" if f.lower().strip() in cost_cols else tr_label(f))
             z1.append(row_proc_1[f])
             z2.append(row_proc_2[f])
             
@@ -432,12 +516,17 @@ with t2:
         ax.legend(fontsize=4, frameon=False, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=2)
         
         ax.axvline(0, color='black', linewidth=0.8)
+
+        # DEGISTI: TR'de eksen etiketlerinde virgul ondalik
+        if lang == "tr":
+            ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: fmt(v, 2)))
+
         plt.tight_layout()
         st.pyplot(fig)
         
         # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
-        pdf_text = f"{c1} (Tahmin: {s1:.2f}) VS {c2} (Tahmin: {s2:.2f})" if lang=="tr" else f"{c1} (Forecast: {s1:.2f}) VS {c2} (Forecast: {s2:.2f})"
+        pdf_text = f"{c1} (Tahmin: {fmt(s1)}) VS {c2} (Tahmin: {fmt(s2)})" if lang=="tr" else f"{c1} (Forecast: {fmt(s1)}) VS {c2} (Forecast: {fmt(s2)})"
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
         st.download_button(
             label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
@@ -462,17 +551,19 @@ with t3:
         raw_vals_current = get_raw_values(d4)
         pred, model_input = calculate_score_engine(d4, raw_vals_current)
         actual_val_str = get_actual_gii(d4, lang)
+        # DEGISTI: TR'de gerceklesen deger gosteriminde virgul ondalik (metin etiketler degismez)
+        actual_disp = actual_val_str.replace(".", ",") if lang == "tr" else actual_val_str
         
         if lang == "tr":
-            target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {pred:.2f}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_val_str}\n\n---\n"
+            target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {fmt(pred)}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_disp}\n\n---\n"
             if target_score > 0:
                 gap = target_score - pred
-                target_text += f"🎯 **Hedef:** {target_score:.2f} | " + (f"📉 **Fark:** {gap:.2f} Puan" if gap > 0 else "🎉 **Durum:** Hedefin üzerindesiniz!")
+                target_text += f"🎯 **Hedef:** {fmt(target_score)} | " + (f"📉 **Fark:** {fmt(gap)} Puan" if gap > 0 else "🎉 **Durum:** Hedefin üzerindesiniz!")
         else:
-            target_text = f"**Analyzed Country:** {d4}\n\n**{TARGET_YEAR} GII Forecast:** {pred:.2f}\n\n**{TARGET_YEAR} Actual:** {actual_val_str}\n\n---\n"
+            target_text = f"**Analyzed Country:** {d4}\n\n**{TARGET_YEAR} GII Forecast:** {fmt(pred)}\n\n**{TARGET_YEAR} Actual:** {actual_disp}\n\n---\n"
             if target_score > 0:
                 gap = target_score - pred
-                target_text += f"🎯 **Target:** {target_score:.2f} | " + (f"📉 **Gap:** {gap:.2f} Points" if gap > 0 else "🎉 **Status:** You are above the target!")
+                target_text += f"🎯 **Target:** {fmt(target_score)} | " + (f"📉 **Gap:** {fmt(gap)} Points" if gap > 0 else "🎉 **Status:** You are above the target!")
 
         explainer = shap.Explainer(model)
         shap_values = explainer(model_input)
@@ -484,13 +575,13 @@ with t3:
         if pos_impacts:
             shap_text += "**Güçlü Yönler (Skoru Artıranlar):**\n" if lang=="tr" else "**Strengths (Drivers):**\n"
             for f, v in pos_impacts[:3]:
-                fname = reverse_feature_map.get(f, f)
-                shap_text += f"- {fname}: +{v:.2f}\n"
+                fname = tr_label(reverse_feature_map.get(f, f))  # DEGISTI: TR'de degisken adi sozlukten
+                shap_text += f"- {fname}: +{fmt(v)}\n"  # DEGISTI
         if neg_impacts:
             shap_text += "\n**Gelişim Alanları (Skoru Düşürenler):**\n" if lang=="tr" else "\n**Improvement Areas:**\n"
             for f, v in neg_impacts[:3]:
-                fname = reverse_feature_map.get(f, f)
-                shap_text += f"- {fname}: {v:.2f}\n"
+                fname = tr_label(reverse_feature_map.get(f, f))  # DEGISTI
+                shap_text += f"- {fname}: {fmt(v)}\n"  # DEGISTI
 
         # GÜNCELLEME: Sütun oranı düzenlendi
         col_txt, col_plot = st.columns([1, 1.4])
@@ -545,7 +636,8 @@ with t4:
 
     d5_c, f5_c = st.columns(2)
     with d5_c: d5 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="trend_c")
-    with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken" if lang=="tr" else "Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en)
+    # DEGISTI: format_func ile yalnizca GOSTERIM Turkce'ye cevrilir; secilen DEGER (sutun anahtari) aynen kalir
+    with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken" if lang=="tr" else "Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en, format_func=tr_label)
     
     if st.button("Trendi Çiz" if lang=="tr" else "Plot Trend", type="primary", key="trend_btn"):
         country_data = df_raw[df_raw[country_col] == d5].copy().sort_values(by=year_col)
@@ -563,17 +655,22 @@ with t4:
             fig_trend, ax = plt.subplots(figsize=(6, 3.5), dpi=150) 
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
-            ax.set_title(f"{d5} - {feat_dropdown}")
+            # DEGISTI: TR'de baslikta degisken adi sozlukten gosterilir (sutun anahtari degismez)
+            ax.set_title(f"{d5} - {tr_label(feat_dropdown)}")
             
             # Displaying only integer years on the X-axis (hiding decimal intervals like 2021.5):
             ax.set_xticks(x) 
+
+            # DEGISTI: TR'de Y ekseni deger etiketlerinde virgul ondalik
+            if lang == "tr":
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: fmt(v, 2)))
             # ------------------------------------
             
             st.pyplot(fig_trend, use_container_width=False)
             
             # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
-            pdf_text = f"Ulke: {d5}\nIncelenen Degisken: {feat_dropdown}" if lang=="tr" else f"Country: {d5}\nVariable: {feat_dropdown}"
+            pdf_text = f"Ulke: {d5}\nIncelenen Degisken: {tr_label(feat_dropdown)}" if lang=="tr" else f"Country: {d5}\nVariable: {tr_label(feat_dropdown)}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
             st.download_button(
                 label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
@@ -640,10 +737,10 @@ with t5:
             table_rows = []
             for item in impacts[:5]:
                 table_rows.append({
-                    col_ind: item['Feat'],
+                    col_ind: tr_label(item['Feat']),  # DEGISTI: TR'de degisken adi sozlukten
                     col_scen: f"%10 {item['Act']}" if lang=="tr" else f"10% {item['Act']}",
-                    col_tar: round(item['Val'], 2),
-                    col_gain: f"+{round(item['Gain'], 3)} Puan" if lang=="tr" else f"+{round(item['Gain'], 3)} Points"
+                    col_tar: (fmt(item['Val'], 2) if lang=="tr" else round(item['Val'], 2)),  # DEGISTI: TR'de virgul ondalik
+                    col_gain: f"+{fmt(item['Gain'], 3)} Puan" if lang=="tr" else f"+{round(item['Gain'], 3)} Points"  # DEGISTI
                 })
             
             df_table = pd.DataFrame(table_rows)
@@ -651,16 +748,16 @@ with t5:
             
             # --- PDF AND TEXT REPORT ---
             if lang == "tr":
-                report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {current_score:.2f}\n\n---\n\n"
+                report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {fmt(current_score)}\n\n---\n\n"
                 report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
                 for item in impacts[:5]:
-                    report += f"- **[{item['Feat']}]** -> %10 {item['Act']} (Yeni Değer: {item['Val']:.2f}) | Artış: **+{item['Gain']:.3f}**\n"
+                    report += f"- **[{tr_label(item['Feat'])}]** -> %10 {item['Act']} (Yeni Değer: {fmt(item['Val'])}) | Artış: **+{fmt(item['Gain'], 3)}**\n"
                 pdf_label = "📥 Raporu PDF Olarak İndir"
             else:
-                report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {current_score:.2f}\n\n---\n\n"
+                report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {fmt(current_score)}\n\n---\n\n"
                 report += f"**PRIORITY AREAS FOR {TARGET_YEAR} SCORE:**\n\n"
                 for item in impacts[:5]:
-                    report += f"- **[{item['Feat']}]** -> 10% {item['Act']} (New Value: {item['Val']:.2f}) | Gain: **+{item['Gain']:.3f}**\n"
+                    report += f"- **[{tr_label(item['Feat'])}]** -> 10% {item['Act']} (New Value: {fmt(item['Val'])}) | Gain: **+{fmt(item['Gain'], 3)}**\n"
                 pdf_label = "📥 Download Report as PDF"
             
             clean_report = report.replace("**", "") 
@@ -774,8 +871,13 @@ with t6:
             
             with col_m1:
                 st.write("**Performans Sıralaması**" if lang=="tr" else "**Performance Ranking**")
+                # DEGISTI: once sayisal siralama yapilir, ardindan TR'de virgul ondalik ile gosterilir
+                df_show = df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True)
+                if lang == "tr":
+                    df_show[col_forecast] = df_show[col_forecast].map(lambda v: fmt(v, 2) if pd.notna(v) else v)
+                    df_show[col_actual]   = df_show[col_actual].map(lambda v: fmt(v, 2) if pd.notna(v) else v)
                 st.dataframe(
-                    df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True),
+                    df_show,
                     use_container_width=True
                 )
             
@@ -807,6 +909,9 @@ with t6:
                 )
                 
                 fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
+                # DEGISTI: TR'de harita hover/colorbar sayilarinda virgul ondalik (ondalik=virgul, binlik=nokta)
+                if lang == "tr":
+                    fig_map.update_layout(separators=",.")
                 st.plotly_chart(fig_map, use_container_width=True)
 
 
