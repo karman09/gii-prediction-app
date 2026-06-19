@@ -145,6 +145,73 @@ def fmt(value, dec=2):
         s = s.replace(".", ",")
     return s
 
+# Ülke adlarının Türkçe karşılıkları (yalnızca GÖSTERİM için; veri anahtarı / harita İngilizce kalır)
+country_translation_dict = {
+    "Albania": "Arnavutluk", "Algeria": "Cezayir", "Angola": "Angola", "Argentina": "Arjantin",
+    "Armenia": "Ermenistan", "Australia": "Avustralya", "Austria": "Avusturya", "Azerbaijan": "Azerbaycan",
+    "Bahamas": "Bahamalar", "Bahrain": "Bahreyn", "Bangladesh": "Bangladeş", "Barbados": "Barbados",
+    "Belarus": "Belarus", "Belgium": "Belçika", "Belize": "Belize", "Benin": "Benin",
+    "Bolivia (Plurinational State of)": "Bolivya", "Bolivia": "Bolivya",
+    "Bosnia and Herzegovina": "Bosna-Hersek", "Botswana": "Botsvana", "Brazil": "Brezilya",
+    "Brunei Darussalam": "Brunei", "Bulgaria": "Bulgaristan", "Burkina Faso": "Burkina Faso",
+    "Burundi": "Burundi", "Cabo Verde": "Yeşil Burun (Cabo Verde)", "Cambodia": "Kamboçya", "Cameroon": "Kamerun",
+    "Canada": "Kanada", "Chile": "Şili", "China": "Çin", "Colombia": "Kolombiya",
+    "Costa Rica": "Kosta Rika", "Côte d'Ivoire": "Fildişi Sahili", "Cote d'Ivoire": "Fildişi Sahili",
+    "Croatia": "Hırvatistan", "Cuba": "Küba", "Cyprus": "Kıbrıs",
+    "Czech Republic": "Çekya", "Czechia": "Çekya",
+    "Democratic Republic of the Congo": "Demokratik Kongo Cumhuriyeti", "Congo, Dem. Rep.": "Demokratik Kongo Cumhuriyeti",
+    "Denmark": "Danimarka", "Dominican Republic": "Dominik Cumhuriyeti", "Ecuador": "Ekvador",
+    "Egypt": "Mısır", "Egypt, Arab Rep.": "Mısır", "El Salvador": "El Salvador", "Estonia": "Estonya",
+    "Eswatini": "Esvatini", "Ethiopia": "Etiyopya", "Fiji": "Fiji", "Finland": "Finlandiya", "France": "Fransa",
+    "Gabon": "Gabon", "Gambia": "Gambiya", "Georgia": "Gürcistan", "Germany": "Almanya",
+    "Ghana": "Gana", "Greece": "Yunanistan", "Guatemala": "Guatemala", "Guinea": "Gine",
+    "Honduras": "Honduras", "Hong Kong, China": "Hong Kong", "Hungary": "Macaristan",
+    "Iceland": "İzlanda", "India": "Hindistan", "Indonesia": "Endonezya",
+    "Iran (Islamic Republic of)": "İran", "Iran": "İran", "Iraq": "Irak", "Ireland": "İrlanda",
+    "Israel": "İsrail", "Italy": "İtalya", "Jamaica": "Jamaika", "Japan": "Japonya",
+    "Jordan": "Ürdün", "Kazakhstan": "Kazakistan", "Kenya": "Kenya", "Kuwait": "Kuveyt",
+    "Kyrgyzstan": "Kırgızistan", "Kyrgyz Republic": "Kırgızistan",
+    "Lao People's Democratic Republic": "Laos", "Lao People's Dem. Rep.": "Laos", "Lao PDR": "Laos",
+    "Latvia": "Letonya", "Lebanon": "Lübnan", "Lithuania": "Litvanya", "Luxembourg": "Lüksemburg",
+    "Madagascar": "Madagaskar", "Malawi": "Malavi", "Malaysia": "Malezya", "Mali": "Mali",
+    "Malta": "Malta", "Mauritania": "Moritanya", "Mauritius": "Mauritius", "Mexico": "Meksika",
+    "Moldova, Republic of": "Moldova", "Republic of Moldova": "Moldova", "Moldova": "Moldova",
+    "Mongolia": "Moğolistan", "Montenegro": "Karadağ", "Morocco": "Fas",
+    "Mozambique": "Mozambik", "Myanmar": "Myanmar", "Namibia": "Namibya", "Nepal": "Nepal",
+    "Netherlands": "Hollanda", "New Zealand": "Yeni Zelanda", "Nicaragua": "Nikaragua",
+    "Niger": "Nijer", "Nigeria": "Nijerya", "North Macedonia": "Kuzey Makedonya",
+    "Norway": "Norveç", "Oman": "Umman", "Pakistan": "Pakistan", "Panama": "Panama",
+    "Paraguay": "Paraguay", "Peru": "Peru", "Philippines": "Filipinler", "Poland": "Polonya",
+    "Portugal": "Portekiz", "Qatar": "Katar",
+    "Korea, Rep.": "Güney Kore", "Republic of Korea": "Güney Kore", "South Korea": "Güney Kore",
+    "Romania": "Romanya", "Russian Federation": "Rusya", "Russia": "Rusya",
+    "Rwanda": "Ruanda", "Saudi Arabia": "Suudi Arabistan", "Senegal": "Senegal",
+    "Serbia": "Sırbistan", "Singapore": "Singapur",
+    "Slovakia": "Slovakya", "Slovak Republic": "Slovakya",
+    "Slovenia": "Slovenya", "South Africa": "Güney Afrika", "Spain": "İspanya",
+    "Sri Lanka": "Sri Lanka", "Sweden": "İsveç", "Switzerland": "İsviçre",
+    "Syrian Arab Republic": "Suriye", "Syria": "Suriye",
+    "Tajikistan": "Tacikistan",
+    "United Republic of Tanzan": "Tanzanya", "United Republic of Tanzania": "Tanzanya", "Tanzania": "Tanzanya",
+    "Thailand": "Tayland", "Togo": "Togo", "Trinidad and Tobago": "Trinidad ve Tobago",
+    "Tunisia": "Tunus", "Türkiye": "Türkiye", "Turkiye": "Türkiye", "Turkey": "Türkiye",
+    "Uganda": "Uganda", "Ukraine": "Ukrayna",
+    "United Arab Emirates": "Birleşik Arap Emirlikleri",
+    "United Kingdom": "Birleşik Krallık",
+    "United States of America": "Amerika Birleşik Devletleri", "United States": "Amerika Birleşik Devletleri",
+    "Uruguay": "Uruguay", "Uzbekistan": "Özbekistan",
+    "Venezuela (Bolivarian Republic of)": "Venezuela", "Venezuela": "Venezuela",
+    "Viet Nam": "Vietnam", "Vietnam": "Vietnam",
+    "Yemen": "Yemen", "Zambia": "Zambiya", "Zimbabwe": "Zimbabve"
+}
+
+def tr_country(name):
+    """Türkçe sayfada ülke adını Türkçe gösterir; sözlükte yoksa olduğu gibi döndürür.
+    İngilizce sayfada değeri değiştirmez."""
+    if lang == "tr":
+        return country_translation_dict.get(name, name)
+    return name
+
 # ============================================================
 # PDF GENERATION HELPER FUNCTION
 # ============================================================
@@ -347,7 +414,7 @@ with t1:
     ))
 
     # Country Selection
-    sim_country = st.selectbox("Simülasyon İçin Ülke Seç" if lang=="tr" else "Select Country", country_list, key="sim_country_box")
+    sim_country = st.selectbox("Simülasyon İçin Ülke Seç" if lang=="tr" else "Select Country", country_list, key="sim_country_box", format_func=tr_country)
     
     # Retrieve 2023 raw data for the selected country
     base_raw_values = get_raw_values(sim_country)
@@ -395,7 +462,7 @@ with t1:
         )
         
         st.write("---")
-        st.write(f"**{sim_country} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
+        st.write(f"**{tr_country(sim_country)} ({INPUT_YEAR})** " + ("Orijinal Tahmin:" if lang=="tr" else "Original Forecast:"))
         st.success(f"**{fmt(base_pred)}**")  # DEGISTI
         
         # Summary Evaluation
@@ -443,9 +510,9 @@ with t1:
         pdf_title = "Senaryo Simulatoru Raporu" if lang=="tr" else "Scenario Simulator Report"
         
         if lang == "tr":
-            pdf_text = f"Ulke: {sim_country}\nOrijinal Tahmin: {fmt(base_pred)}\nSimule Edilen Skor: {fmt(sim_pred)}\nFark: {fmt(diff)} Puan\n\n--- Degistirilen Degiskenler ---\n"
+            pdf_text = f"Ulke: {tr_country(sim_country)}\nOrijinal Tahmin: {fmt(base_pred)}\nSimule Edilen Skor: {fmt(sim_pred)}\nFark: {fmt(diff)} Puan\n\n--- Degistirilen Degiskenler ---\n"
         else:
-            pdf_text = f"Country: {sim_country}\nOriginal Forecast: {fmt(base_pred)}\nSimulated Score: {fmt(sim_pred)}\nDiff: {fmt(diff)} Points\n\n--- Changed Variables ---\n"
+            pdf_text = f"Country: {tr_country(sim_country)}\nOriginal Forecast: {fmt(base_pred)}\nSimulated Score: {fmt(sim_pred)}\nDiff: {fmt(diff)} Points\n\n--- Changed Variables ---\n"
         
         if not changed_df.empty:
             for index, row in changed_df.iterrows():
@@ -473,8 +540,8 @@ with t2:
         st.info("💡 **This module** allows you to compare the performance of two countries across the 24 indicators used in the model by visualizing them through standard Z-scores. ")
 
     c1_col, c2_col = st.columns(2)
-    with c1_col: c1 = st.selectbox("Ülke A" if lang=="tr" else "Country A", country_list, key="bench_c1")
-    with c2_col: c2 = st.selectbox("Ülke B" if lang=="tr" else "Country B", country_list, key="bench_c2", index=1)
+    with c1_col: c1 = st.selectbox("Ülke A" if lang=="tr" else "Country A", country_list, key="bench_c1", format_func=tr_country)
+    with c2_col: c2 = st.selectbox("Ülke B" if lang=="tr" else "Country B", country_list, key="bench_c2", index=1, format_func=tr_country)
     
     if st.button("Grafiği Oluştur" if lang=="tr" else "Generate Chart", type="primary", key="bench_btn"):
         v1, v2 = get_raw_values(c1), get_raw_values(c2)
@@ -496,8 +563,8 @@ with t2:
         
         # Adjusted bar widths for UI consistency
         bar_width = 0.35
-        ax.barh(y - bar_width/2, z1, bar_width, label=f"{c1}", color="#1A5276", edgecolor='none', alpha=0.9)
-        ax.barh(y + bar_width/2, z2, bar_width, label=f"{c2}", color="#5DADE2", edgecolor='none', alpha=0.9)
+        ax.barh(y - bar_width/2, z1, bar_width, label=f"{tr_country(c1)}", color="#1A5276", edgecolor='none', alpha=0.9)
+        ax.barh(y + bar_width/2, z2, bar_width, label=f"{tr_country(c2)}", color="#5DADE2", edgecolor='none', alpha=0.9)
         
         ax.set_yticks(y)
         ax.set_yticklabels(lbls, fontsize=6, color="#333333") 
@@ -526,7 +593,7 @@ with t2:
         
         # Generate and provide PDF download option
         pdf_title = "Karsilastirmali Analiz" if lang=="tr" else "Comparative Analysis"
-        pdf_text = f"{c1} (Tahmin: {fmt(s1)}) VS {c2} (Tahmin: {fmt(s2)})" if lang=="tr" else f"{c1} (Forecast: {fmt(s1)}) VS {c2} (Forecast: {fmt(s2)})"
+        pdf_text = f"{tr_country(c1)} (Tahmin: {fmt(s1)}) VS {tr_country(c2)} (Tahmin: {fmt(s2)})" if lang=="tr" else f"{tr_country(c1)} (Forecast: {fmt(s1)}) VS {tr_country(c2)} (Forecast: {fmt(s2)})"
         pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig)
         st.download_button(
             label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
@@ -544,7 +611,7 @@ with t3:
     st.info("💡 " + ("Bu modül, hedef skor ile mevcut tahmin arasındaki farkı analiz eder; SHAP grafikleri yardımıyla modele etki eden en güçlü yönleri ve iyileştirmeye açık gelişim alanlarını listeler." if lang=="tr" else "This module analyzes the difference between the target score and the current prediction; using SHAP plots, it highlights the strongest driving factors and areas for improvement."))
 
     shap_c, target_c = st.columns([2,1])
-    with shap_c: d4 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="shap_c")
+    with shap_c: d4 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="shap_c", format_func=tr_country)
     with target_c: target_score = st.number_input("Hedeflenen GII Skoru" if lang=="tr" else "Targeted Score", value=0.0)
     
     if st.button("Analizi Başlat" if lang=="tr" else "Start Analysis", type="primary", key="shap_btn"):
@@ -555,12 +622,12 @@ with t3:
         actual_disp = actual_val_str.replace(".", ",") if lang == "tr" else actual_val_str
         
         if lang == "tr":
-            target_text = f"**Analiz Edilen Ülke:** {d4}\n\n**{TARGET_YEAR} GII Tahmini:** {fmt(pred)}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_disp}\n\n---\n"
+            target_text = f"**Analiz Edilen Ülke:** {tr_country(d4)}\n\n**{TARGET_YEAR} GII Tahmini:** {fmt(pred)}\n\n**{TARGET_YEAR} Gerçekleşen:** {actual_disp}\n\n---\n"
             if target_score > 0:
                 gap = target_score - pred
                 target_text += f"🎯 **Hedef:** {fmt(target_score)} | " + (f"📉 **Fark:** {fmt(gap)} Puan" if gap > 0 else "🎉 **Durum:** Hedefin üzerindesiniz!")
         else:
-            target_text = f"**Analyzed Country:** {d4}\n\n**{TARGET_YEAR} GII Forecast:** {fmt(pred)}\n\n**{TARGET_YEAR} Actual:** {actual_disp}\n\n---\n"
+            target_text = f"**Analyzed Country:** {tr_country(d4)}\n\n**{TARGET_YEAR} GII Forecast:** {fmt(pred)}\n\n**{TARGET_YEAR} Actual:** {actual_disp}\n\n---\n"
             if target_score > 0:
                 gap = target_score - pred
                 target_text += f"🎯 **Target:** {fmt(target_score)} | " + (f"📉 **Gap:** {fmt(gap)} Points" if gap > 0 else "🎉 **Status:** You are above the target!")
@@ -635,7 +702,7 @@ with t4:
     # ------------------------------------------
 
     d5_c, f5_c = st.columns(2)
-    with d5_c: d5 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="trend_c")
+    with d5_c: d5 = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="trend_c", format_func=tr_country)
     # DEGISTI: format_func ile yalnizca GOSTERIM Turkce'ye cevrilir; secilen DEGER (sutun anahtari) aynen kalir
     with f5_c: feat_dropdown = st.selectbox("İncelenecek Değişken" if lang=="tr" else "Variable to Examine", trend_features_tr if lang=="tr" else trend_features_en, format_func=tr_label)
     
@@ -656,7 +723,7 @@ with t4:
             
             ax.plot(x, y, marker='o', color='#0f766e', linewidth=2.5)
             # DEGISTI: TR'de baslikta degisken adi sozlukten gosterilir (sutun anahtari degismez)
-            ax.set_title(f"{d5} - {tr_label(feat_dropdown)}")
+            ax.set_title(f"{tr_country(d5)} - {tr_label(feat_dropdown)}")
             
             # Displaying only integer years on the X-axis (hiding decimal intervals like 2021.5):
             ax.set_xticks(x) 
@@ -670,7 +737,7 @@ with t4:
             
             # Generate and provide PDF download option
             pdf_title = "Trend Analizi" if lang=="tr" else "Trend Analysis"
-            pdf_text = f"Ulke: {d5}\nIncelenen Degisken: {tr_label(feat_dropdown)}" if lang=="tr" else f"Country: {d5}\nVariable: {tr_label(feat_dropdown)}"
+            pdf_text = f"Ulke: {tr_country(d5)}\nIncelenen Degisken: {tr_label(feat_dropdown)}" if lang=="tr" else f"Country: {tr_country(d5)}\nVariable: {tr_label(feat_dropdown)}"
             pdf_bytes = generate_pdf_report(pdf_title, pdf_text, fig_trend)
             st.download_button(
                 label="📥 PDF Olarak İndir" if lang=="tr" else "📥 Download PDF",
@@ -694,7 +761,7 @@ with t5:
     else:
         st.info("💡 **This module** automatically measures the impact of a 10% individual improvement in each variable while keeping all other variables constant, identifying priority intervention areas for policymakers.")
 
-    adv_country = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="adv_country")
+    adv_country = st.selectbox("Ülke Seç" if lang=="tr" else "Select Country", country_list, key="adv_country", format_func=tr_country)
     
     if st.button("Analizi Başlat" if lang=="tr" else "Start Analysis", type="primary", key="adv_btn"):
         adv_inputs = get_raw_values(adv_country)
@@ -748,13 +815,13 @@ with t5:
             
             # --- PDF AND TEXT REPORT ---
             if lang == "tr":
-                report = f"**Analiz Edilen Ülke:** {adv_country}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {fmt(current_score)}\n\n---\n\n"
+                report = f"**Analiz Edilen Ülke:** {tr_country(adv_country)}\n\n**Baz Yıl ({INPUT_YEAR}) Tahmini:** {fmt(current_score)}\n\n---\n\n"
                 report += f"**{TARGET_YEAR} SKORU İÇİN ÖNCELİKLİ ALANLAR:**\n\n"
                 for item in impacts[:5]:
                     report += f"- **[{tr_label(item['Feat'])}]** -> %10 {item['Act']} (Yeni Değer: {fmt(item['Val'])}) | Artış: **+{fmt(item['Gain'], 3)}**\n"
                 pdf_label = "📥 Raporu PDF Olarak İndir"
             else:
-                report = f"**Analyzed Country:** {adv_country}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {fmt(current_score)}\n\n---\n\n"
+                report = f"**Analyzed Country:** {tr_country(adv_country)}\n\n**Base Year ({INPUT_YEAR}) Forecast:** {fmt(current_score)}\n\n---\n\n"
                 report += f"**PRIORITY AREAS FOR {TARGET_YEAR} SCORE:**\n\n"
                 for item in impacts[:5]:
                     report += f"- **[{tr_label(item['Feat'])}]** -> 10% {item['Act']} (New Value: {fmt(item['Val'])}) | Gain: **+{fmt(item['Gain'], 3)}**\n"
@@ -866,14 +933,17 @@ with t6:
             
             # Apply mapping to map data
             df_map["Harita_Icin_Ulke"] = df_map[col_country].replace(full_country_mapping)
+            # Yalnizca GOSTERIM icin Turkce ad sutunu (cografi eslesme ve siralama etkilenmez)
+            df_map["__display_name"] = df_map[col_country].map(tr_country)
             
             col_m1, col_m2 = st.columns([1, 2])
             
             with col_m1:
                 st.write("**Performans Sıralaması**" if lang=="tr" else "**Performance Ranking**")
                 # DEGISTI: once sayisal siralama yapilir, ardindan TR'de virgul ondalik ile gosterilir
-                df_show = df_map.drop(columns=["Harita_Icin_Ulke"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True)
+                df_show = df_map.drop(columns=["Harita_Icin_Ulke", "__display_name"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True)
                 if lang == "tr":
+                    df_show[col_country]  = df_show[col_country].map(tr_country)
                     df_show[col_forecast] = df_show[col_forecast].map(lambda v: fmt(v, 2) if pd.notna(v) else v)
                     df_show[col_actual]   = df_show[col_actual].map(lambda v: fmt(v, 2) if pd.notna(v) else v)
                 st.dataframe(
@@ -889,7 +959,7 @@ with t6:
                     locations="Harita_Icin_Ulke", 
                     locationmode="country names",
                     color=col_forecast,
-                    hover_name=col_country, 
+                    hover_name="__display_name",
                     hover_data={
                         "Harita_Icin_Ulke": False, 
                         col_country: False, 
