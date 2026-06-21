@@ -9,3 +9,4 @@ fpdf2
 plotly
 openpyxl
 lightgbm
+kaleido
