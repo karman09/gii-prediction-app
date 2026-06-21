@@ -987,8 +987,7 @@ with t6:
                         col_forecast: ":.2f", 
                         col_actual: ":.2f"
                     },
-                    color_continuous_scale="Viridis",
-                    title="GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
+                    color_continuous_scale="Viridis"
                 )
                 
     
@@ -999,8 +998,25 @@ with t6:
                     hoverinfo="skip"
                 )
                 
-                fig_map.update_layout(margin=dict(l=0, r=0, t=30, b=0))
-                # DEGISTI: TR'de harita hover/colorbar sayilarinda virgul ondalik (ondalik=virgul, binlik=nokta)
+                map_title = "GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
+                fig_map.update_layout(
+                    title=dict(
+                        text=map_title,
+                        x=0.5, xanchor="center",
+                        y=0.99, yanchor="top",
+                        pad=dict(t=0, b=0),
+                        font=dict(size=15)
+                    ),
+                    margin=dict(l=0, r=0, t=20, b=0),
+                    font=dict(size=12),  # genel font tabani (okunabilirlik icin)
+                    coloraxis_colorbar=dict(
+                        title=dict(text=col_forecast, font=dict(size=12)),
+                        tickfont=dict(size=11)
+                    )
+                )
+                
+                fig_map.update_geos(lataxis_range=[-58, 85], showframe=True)
+                
                 if lang == "tr":
                     fig_map.update_layout(separators=",.")
                 st.plotly_chart(fig_map, use_container_width=True)
