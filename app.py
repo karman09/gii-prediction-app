@@ -864,9 +864,12 @@ with t5:
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
+    if lang == "tr":
+        st.info("💡 **Bu modül**, tüm ülkelerin 2025 öngörü skorlarını tek bir tabloda sıralayarak ve dünya haritası üzerinde renk yoğunluğuyla görselleştirerek küresel inovasyon performansının mekansal dağılımını analiz etmenize olanak tanır.")
+    else:
+        st.info("💡 **This module** allows you to analyze the spatial distribution of global innovation performance by ranking all countries' 2025 forecast scores in a single table and visualizing them through color intensity on a world map.")
     
     if st.button("Harita ve Sıralamayı Yükle" if lang=="tr" else "Load Map & Leaderboard", key="load_map_btn"):
-        with st.spinner("Harita ve Sıralama Yükleniyor..."):
             
             col_country = "Ülke" if lang=="tr" else "Country"
             col_forecast = "Tahmin" if lang=="tr" else "Forecast"
