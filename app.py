@@ -1057,7 +1057,7 @@ with t6:
                     st.caption(
                         ""
                         if lang=="tr" else
-                        "For high-res export, add 'kaleido' to your requirements.txt."
+                        ""
                     )
 # ============================================================
 # FOOTER & DATA SOURCE ATTRIBUTION
