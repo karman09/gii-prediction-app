@@ -861,21 +861,24 @@ with t5:
 
 # ============================================================
 # ============================================================
+# ============================================================
 # TAB 6: GLOBAL LEADERBOARD & MAP (125+ COUNTRY DICTIONARY)
 # ============================================================
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
+
     if lang == "tr":
-        st.info("💡 **Bu modül**, tüm ülkelerin 2025 tahmin skorlarını tek bir tabloda sıralayarak ve dünya haritası üzerinde renk yoğunluğuyla görselleştirerek küresel inovasyon performansının mekansal dağılımını analiz etmenize olanak tanır.")
+        st.info("💡 **Bu modül**, tüm ülkelerin 2025 öngörü skorlarını tek bir tabloda sıralayarak ve dünya haritası üzerinde renk yoğunluğuyla görselleştirerek küresel inovasyon performansının mekansal dağılımını analiz etmenize olanak tanır.")
     else:
         st.info("💡 **This module** allows you to analyze the spatial distribution of global innovation performance by ranking all countries' 2025 forecast scores in a single table and visualizing them through color intensity on a world map.")
-    
+
     if st.button("Harita ve Sıralamayı Yükle" if lang=="tr" else "Load Map & Leaderboard", key="load_map_btn"):
-            
+        with st.spinner("Harita ve Sıralama Yükleniyor..."):
+
             col_country = "Ülke" if lang=="tr" else "Country"
             col_forecast = "Tahmin" if lang=="tr" else "Forecast"
             col_actual = "Gerçekleşen" if lang=="tr" else "Actual"
-            
+
             map_data = []
             for c in country_list:
                 p, _ = calculate_score_engine(c, get_raw_values(c))
@@ -884,15 +887,15 @@ with t6:
                     act_val = float(act_str)
                 except:
                     act_val = np.nan
-                    
+
                 map_data.append({
-                    col_country: c, 
-                    col_forecast: p, 
+                    col_country: c,
+                    col_forecast: p,
                     col_actual: act_val
                 })
-            
+
             df_map = pd.DataFrame(map_data)
-            
+
             # Plotly standard name mapping for all possible countries in the GII Data
             full_country_mapping = {
                 "Albania": "Albania", "Algeria": "Algeria", "Angola": "Angola", "Argentina": "Argentina",
@@ -952,17 +955,17 @@ with t6:
                 "Viet Nam": "Vietnam", "Vietnam": "Vietnam",
                 "Yemen": "Yemen", "Zambia": "Zambia", "Zimbabwe": "Zimbabwe"
             }
-            
+
             # Apply mapping to map data
             df_map["Harita_Icin_Ulke"] = df_map[col_country].replace(full_country_mapping)
             # Yalnizca GOSTERIM icin Turkce ad sutunu (cografi eslesme ve siralama etkilenmez)
             df_map["__display_name"] = df_map[col_country].map(tr_country)
-            
+
             col_m1, col_m2 = st.columns([1, 2])
-            
+
             with col_m1:
                 st.write("**Performans Sıralaması**" if lang=="tr" else "**Performance Ranking**")
-                # DEGISTI: once sayisal siralama yapilir, ardindan TR'de virgul ondalik ile gosterilir
+                # Once sayisal siralama yapilir, ardindan TR'de virgul ondalik ile gosterilir
                 df_show = df_map.drop(columns=["Harita_Icin_Ulke", "__display_name"]).sort_values(by=col_forecast, ascending=False).reset_index(drop=True)
                 if lang == "tr":
                     df_show[col_country]  = df_show[col_country].map(tr_country)
@@ -972,33 +975,33 @@ with t6:
                     df_show,
                     use_container_width=True
                 )
-            
+
             with col_m2:
                 st.write("**Mekansal Dağılım Haritası**" if lang=="tr" else "**Spatial Distribution Map**")
-                
+
                 fig_map = px.choropleth(
-                    df_map, 
-                    locations="Harita_Icin_Ulke", 
+                    df_map,
+                    locations="Harita_Icin_Ulke",
                     locationmode="country names",
                     color=col_forecast,
                     hover_name="__display_name",
                     hover_data={
-                        "Harita_Icin_Ulke": False, 
-                        col_country: False, 
-                        col_forecast: ":.2f", 
+                        "Harita_Icin_Ulke": False,
+                        col_country: False,
+                        col_forecast: ":.2f",
                         col_actual: ":.2f"
                     },
                     color_continuous_scale="Viridis"
                 )
-                
-    
+
                 fig_map.add_scattergeo(
-                    locations=df_map["Harita_Icin_Ulke"], 
+                    locations=df_map["Harita_Icin_Ulke"],
                     locationmode="country names",
                     marker=dict(color="red", size=5, opacity=0.8),
                     hoverinfo="skip"
                 )
-                
+
+                # Baslik haritaya yaklastirildi (ust bosluk kaldirildi) + tum yazilar okunabilir
                 map_title = "GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
                 fig_map.update_layout(
                     title=dict(
@@ -1009,39 +1012,30 @@ with t6:
                         font=dict(size=15)
                     ),
                     margin=dict(l=0, r=0, t=20, b=0),
-                    font=dict(size=12),  # genel font tabani (okunabilirlik icin)
+                    font=dict(size=12),
                     coloraxis_colorbar=dict(
                         title=dict(text=col_forecast, font=dict(size=12)),
                         tickfont=dict(size=11)
                     )
                 )
-                
+                # Antarktika'nin bos seridini kirparak haritayi kasaya tam oturt
                 fig_map.update_geos(lataxis_range=[-58, 85], showframe=True)
-                
+
+                # TR'de harita hover/colorbar sayilarinda virgul ondalik (ondalik=virgul, binlik=nokta)
                 if lang == "tr":
                     fig_map.update_layout(separators=",.")
+
                 st.plotly_chart(
                     fig_map,
                     use_container_width=True,
                     config={
-                        # Indirilen gorsel vektor (SVG) -> her boyutta cam gibi keskin
                         "toImageButtonOptions": {"format": "svg", "scale": 4},
                         "displaylogo": False,
                         "responsive": True,
                     }
                 )
 
-st.plotly_chart(
-                    fig_map,
-                    use_container_width=True,
-                    config={
-                        "toImageButtonOptions": {"format": "svg", "scale": 4},
-                        "displaylogo": False,
-                        "responsive": True,
-                    }
-                )
-
-               
+                # Makale/doküman için yüksek çözünürlüklü harita indirme (kaleido gerektirir)
                 try:
                     png_bytes = fig_map.to_image(format="png", width=1600, height=900, scale=3)
                     st.download_button(
@@ -1061,12 +1055,10 @@ st.plotly_chart(
                     )
                 except Exception:
                     st.caption(
-                        "Yüksek çözünürlüklü indirme için terminalde: pip install kaleido"
+                        "Yüksek çözünürlüklü indirme için requirements.txt dosyasına 'kaleido' ekleyin."
                         if lang=="tr" else
-                        "For high-res export run in terminal: pip install kaleido"
+                        "For high-res export, add 'kaleido' to your requirements.txt."
                     )
-
-
 # ============================================================
 # FOOTER & DATA SOURCE ATTRIBUTION
 # ============================================================
