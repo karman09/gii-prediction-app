@@ -302,7 +302,7 @@ trend_candidates = [c for c in df_raw.columns if c != country_col and c != year_
 gii_col_exact = [c for c in df_raw.columns if "global innovation index" in c.lower()]
 if gii_col_exact and gii_col_exact[0] in trend_candidates:
     trend_candidates.remove(gii_col_exact[0])
-trend_features_tr = ["GII Skoru (Gerçekleşen)"] + trend_candidates
+trend_features_tr = ["KİE Skoru (Gerçekleşen)"] + trend_candidates
 trend_features_en = ["GII Score (Actual)"] + trend_candidates
 
 # ============================================================
