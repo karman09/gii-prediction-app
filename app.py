@@ -14,6 +14,7 @@ import io
 import tempfile 
 from fpdf import FPDF # Requirement: pip install fpdf2
 import plotly.express as px # Requirement: pip install plotly (Utilized for maps and heatmaps)
+pip install kaleido
 
 st.set_page_config(page_title="GII 2025 Strategic Prediction Interface", page_icon="📊", layout="wide")
 
@@ -1030,6 +1031,40 @@ with t6:
                     }
                 )
 
+st.plotly_chart(
+                    fig_map,
+                    use_container_width=True,
+                    config={
+                        "toImageButtonOptions": {"format": "svg", "scale": 4},
+                        "displaylogo": False,
+                        "responsive": True,
+                    }
+                )
+
+               
+                try:
+                    png_bytes = fig_map.to_image(format="png", width=1600, height=900, scale=3)
+                    st.download_button(
+                        label="📥 Haritayı Yüksek Çözünürlüklü (PNG) İndir" if lang=="tr" else "📥 Download Map (High-Res PNG)",
+                        data=png_bytes,
+                        file_name="GII_2025_Harita.png",
+                        mime="image/png",
+                        key="dl_map_png"
+                    )
+                    svg_bytes = fig_map.to_image(format="svg", width=1600, height=900)
+                    st.download_button(
+                        label="📥 Haritayı Vektör (SVG) İndir" if lang=="tr" else "📥 Download Map (Vector SVG)",
+                        data=svg_bytes,
+                        file_name="GII_2025_Harita.svg",
+                        mime="image/svg+xml",
+                        key="dl_map_svg"
+                    )
+                except Exception:
+                    st.caption(
+                        "Yüksek çözünürlüklü indirme için terminalde: pip install kaleido"
+                        if lang=="tr" else
+                        "For high-res export run in terminal: pip install kaleido"
+                    )
 
 
 # ============================================================
