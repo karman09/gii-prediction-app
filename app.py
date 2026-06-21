@@ -1019,7 +1019,16 @@ with t6:
                 
                 if lang == "tr":
                     fig_map.update_layout(separators=",.")
-                st.plotly_chart(fig_map, use_container_width=True)
+                st.plotly_chart(
+                    fig_map,
+                    use_container_width=True,
+                    config={
+                        # Indirilen gorsel vektor (SVG) -> her boyutta cam gibi keskin
+                        "toImageButtonOptions": {"format": "svg", "scale": 4},
+                        "displaylogo": False,
+                        "responsive": True,
+                    }
+                )
 
 
 
