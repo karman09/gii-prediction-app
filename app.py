@@ -727,7 +727,7 @@ with t4:
     if st.button("Trendi Çiz" if lang=="tr" else "Plot Trend", type="primary", key="trend_btn"):
         country_data = df_raw[df_raw[country_col] == d5].copy().sort_values(by=year_col)
         actual_col = None
-        if feat_dropdown in ["GII Skoru (Gerçekleşen)", "GII Score (Actual)"]:
+        if feat_dropdown in ["KİE Skoru (Gerçekleşen)", "GII Skoru (Gerçekleşen)", "GII Score (Actual)"]:
             gii_cols = [c for c in df_raw.columns if "global innovation index" in c.lower()]
             if gii_cols: actual_col = gii_cols[0]
         else: actual_col = feat_dropdown 
