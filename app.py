@@ -14,7 +14,7 @@ import io
 import tempfile 
 from fpdf import FPDF # Requirement: pip install fpdf2
 import plotly.express as px # Requirement: pip install plotly (Utilized for maps and heatmaps)
-pip install kaleido
+
 
 st.set_page_config(page_title="GII 2025 Strategic Prediction Interface", page_icon="📊", layout="wide")
 
