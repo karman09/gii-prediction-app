@@ -1002,7 +1002,7 @@ with t6:
                 )
 
                 # Baslik haritaya yaklastirildi (ust bosluk kaldirildi) + tum yazilar okunabilir
-                map_title = "GII 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
+                map_title = "KİE 2025 Tahmin Dağılımı" if lang=="tr" else "GII 2025 Forecast Distribution"
                 fig_map.update_layout(
                     title=dict(
                         text=map_title,
