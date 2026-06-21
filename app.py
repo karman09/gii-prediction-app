@@ -407,7 +407,7 @@ with t1:
     
     st.info("💡 " + (
         "Bu modül üzerinden ilgili ülkenin 2023 ham değerlerini inceleyebilir, "
-        "parametrelerde yapacağınız değişikliklerin 2025 öngörü skoruna etkisini eşzamanlı olarak analiz edebilirsiniz."
+        "parametrelerde yapacağınız değişikliklerin 2025 tahmin skoruna etkisini eşzamanlı olarak analiz edebilirsiniz."
         if lang=="tr" else 
         "In this module, you can review the selected country's 2023 raw values and analyze in real-time "
         "how modifying these parameters affects the predicted 2025 score."
@@ -865,7 +865,7 @@ with t5:
 with t6:
     st.markdown("### " + ("Küresel Performans Haritası ve Sıralama Analizi" if lang=="tr" else "Global Performance Map and Ranking Analysis"))
     if lang == "tr":
-        st.info("💡 **Bu modül**, tüm ülkelerin 2025 öngörü skorlarını tek bir tabloda sıralayarak ve dünya haritası üzerinde renk yoğunluğuyla görselleştirerek küresel inovasyon performansının mekansal dağılımını analiz etmenize olanak tanır.")
+        st.info("💡 **Bu modül**, tüm ülkelerin 2025 tahmin skorlarını tek bir tabloda sıralayarak ve dünya haritası üzerinde renk yoğunluğuyla görselleştirerek küresel inovasyon performansının mekansal dağılımını analiz etmenize olanak tanır.")
     else:
         st.info("💡 **This module** allows you to analyze the spatial distribution of global innovation performance by ranking all countries' 2025 forecast scores in a single table and visualizing them through color intensity on a world map.")
     
