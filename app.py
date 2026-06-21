@@ -1035,7 +1035,7 @@ with t6:
                     }
                 )
 
-                # Makale/doküman için yüksek çözünürlüklü harita indirme (kaleido gerektirir)
+                
                 try:
                     png_bytes = fig_map.to_image(format="png", width=1600, height=900, scale=3)
                     st.download_button(
@@ -1055,7 +1055,7 @@ with t6:
                     )
                 except Exception:
                     st.caption(
-                        "Yüksek çözünürlüklü indirme için requirements.txt dosyasına 'kaleido' ekleyin."
+                        ""
                         if lang=="tr" else
                         "For high-res export, add 'kaleido' to your requirements.txt."
                     )
